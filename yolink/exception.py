@@ -1,0 +1,26 @@
+"""YoLink Client Error."""
+
+
+class YoLinkClientError(Exception):
+    """YoLink Client Error.
+
+    code: Error Code
+    desc: Desc or Error
+    """
+
+    def __init__(
+        self,
+        code: str,
+        desc: str,
+    ) -> None:
+        """Initialize the yolink api error."""
+
+        self.code = code
+        self.message = desc
+
+
+class YoLinkAuthFailError(YoLinkClientError):
+    """YoLink Auth Fail"""
+
+    def __init__(self, code: str, desc: str) -> None:
+        super().__init__(code, desc)
