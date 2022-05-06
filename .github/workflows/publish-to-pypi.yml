@@ -1,0 +1,27 @@
+name: yolink_
+
+on:
+  release:
+    types: [published, prereleased]
+
+jobs:
+  build-and-publish:
+    name: Builds and publishes releases to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3.1.2
+        with:
+          python-version: 3.9
+      - name: Install wheel
+        run: >-
+          pip install wheel
+      - name: Build
+        run: >-
+          python3 setup.py sdist bdist_wheel
+      - name: Publish release to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
