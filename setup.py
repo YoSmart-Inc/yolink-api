@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="yolink-api",
-    version="0.0.4",
+    version="0.0.5",
     author="YoSmart",
     description="A library to authenticate with yolink device",
     long_description=open("README.md").read(),
@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "aiohttp",
-        "paho-mqtt==1.6.1",
-        "pydantic==1.9.0",
+        "paho-mqtt>=1.6.1",
+        "pydantic>=1.9.0",
     ]
 )
