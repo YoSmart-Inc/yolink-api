@@ -1,6 +1,6 @@
 """Const for YoLink Client."""
 YOLINK_HOST = "api.yosmart.com"
-YOLINK_HTTP_HOST = f"http://{YOLINK_HOST}"
+YOLINK_HTTP_HOST = f"https://{YOLINK_HOST}"
 OAUTH2_AUTHORIZE = f"{YOLINK_HTTP_HOST}/oauth/v2/authorization.htm"
 OAUTH2_TOKEN = f"{YOLINK_HTTP_HOST}/open/yolink/token"
 YOLINK_API_GATE = f"{YOLINK_HTTP_HOST}/open/yolink/v2/api"
