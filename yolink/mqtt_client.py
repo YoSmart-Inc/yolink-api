@@ -1,5 +1,7 @@
 """YoLink Mqtt Client."""
 from typing import Callable
+
+from pydantic import ValidationError
 from .exception import YoLinkClientError
 from .model import BRDP
 from .auth_mgr import YoLinkAuthMgr
@@ -97,5 +99,9 @@ class MqttClient:
         )
         keys = msg.topic.split("/")
         if len(keys) == 4 and keys[3] == "report":
-            data = (keys[2], BRDP.parse_raw(msg.payload.decode("UTF-8")))
+            try:
+                data = (keys[2], BRDP.parse_raw(msg.payload.decode("UTF-8")))
+            except ValidationError:
+                # fix sometimes report empty data
+                _LOGGER.debug("Validation Error.")
             self._callback(data)
