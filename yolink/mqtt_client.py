@@ -101,7 +101,7 @@ class MqttClient:
         if len(keys) == 4 and keys[3] == "report":
             try:
                 data = (keys[2], BRDP.parse_raw(msg.payload.decode("UTF-8")))
+                self._callback(data)
             except ValidationError:
-                # fix sometimes report empty data
-                _LOGGER.debug("Validation Error.")
-            self._callback(data)
+                # ignore invalidate message
+                _LOGGER.debug("Message invalidate.")

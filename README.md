@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 0.0.8 (2022.6.8)
+
+* ignore invalid data report
+
 ### 0.0.7 (2022.6.6)
 
 * Fix Mqtt Empty data report, Failure by validation
