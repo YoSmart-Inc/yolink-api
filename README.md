@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 0.0.9 (2022.7.12)
+
+* add parent device
+
 ### 0.0.8 (2022.6.8)
 
 * ignore invalid data report

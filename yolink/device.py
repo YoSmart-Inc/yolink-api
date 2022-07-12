@@ -4,7 +4,7 @@ import abc
 
 from .client import YoLinkClient
 from .model import BRDP, BSDPHelper
-from .const import ATTR_DEVICE_ID, ATTR_DEVICE_NAME, ATTR_DEVICE_TOKEN, ATTR_DEVICE_TYPE
+from .const import ATTR_DEVICE_ID, ATTR_DEVICE_NAME, ATTR_DEVICE_TOKEN, ATTR_DEVICE_TYPE, ATTR_DEVICE_PARENT_ID
 
 
 class YoLinkDevice(metaclass=abc.ABCMeta):
@@ -15,6 +15,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_name = device_info[ATTR_DEVICE_NAME]
         self.device_net_token = device_info[ATTR_DEVICE_TOKEN]
         self.device_type = device_info[ATTR_DEVICE_TYPE]
+        self.parent_id = device_info[ATTR_DEVICE_PARENT_ID]
         self.client = client
 
     async def call_device_http_api(self, method: str, params: dict | None) -> BRDP:
