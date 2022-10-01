@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 0.1.0
+
+* bug fix for mqtt reconnect fail by authentication information expired.
+
 ### 0.0.9 (2022.7.12)
 
 * add parent device
@@ -24,4 +28,4 @@
 
 ### 0.0.4 (2022.5.2)
 
-* YoLink first version python
+* YoLink first version python client
