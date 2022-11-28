@@ -2,7 +2,7 @@
 from typing import Any
 
 
-class ClientReqeust:
+class ClientRequest:
     """Client request"""
 
     def __init__(self, method: str, params: dict[str, Any]) -> None:

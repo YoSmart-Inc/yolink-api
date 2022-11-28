@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="yolink-api",
-    version="0.1.3",
+    version="0.1.4",
     author="YoSmart",
     description="A library to authenticate with yolink device",
     long_description=open("README.md").read(),
