@@ -1,4 +1,4 @@
-"""Outlet reqeust builder"""
+"""Outlet request builder"""
 from __future__ import annotations
 
 from .client_request import ClientRequest

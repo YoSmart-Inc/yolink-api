@@ -38,6 +38,6 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         """Call *.fetchState with device to fetch state data."""
         return await self.call_device_http_api("fetchState", None)
 
-    async def call_device(self, reqeust: ClientRequest) -> BRDP:
+    async def call_device(self, request: ClientRequest) -> BRDP:
         """Call device"""
-        return await self.call_device_http_api(reqeust.method, reqeust.params)
+        return await self.call_device_http_api(request.method, request.params)
