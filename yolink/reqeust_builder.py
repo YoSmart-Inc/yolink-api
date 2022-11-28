@@ -10,12 +10,6 @@ class RequestBuilder(metaclass=abc.ABCMeta):
     def __init__(self) -> None:
         self._method = None
 
-    @property
-    def method(self):
-        """Return call method"""
-        return self._method
-
-    @method.setter
     def method(self, method: str):
         """Set call method"""
         self._method = method

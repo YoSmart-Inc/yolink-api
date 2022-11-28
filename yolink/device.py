@@ -5,7 +5,6 @@ import abc
 from .client import YoLinkClient
 from .model import BRDP, BSDPHelper
 from .const import ATTR_DEVICE_ID, ATTR_DEVICE_NAME, ATTR_DEVICE_TOKEN, ATTR_DEVICE_TYPE, ATTR_DEVICE_PARENT_ID
-from .reqeust_builder import RequestBuilder
 from .client_reqeust import ClientReqeust
 
 
@@ -39,7 +38,6 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         """Call *.fetchState with device to fetch state data."""
         return await self.call_device_http_api("fetchState", None)
 
-    async def call(self, builder: RequestBuilder) -> BRDP:
+    async def call_device(self, reqeust: ClientReqeust) -> BRDP:
         """Call device"""
-        client_request = builder.build()
-        return await self.call_device_http_api(client_request.method, client_request.params)
+        return await self.call_device_http_api(reqeust.method, reqeust.params)
