@@ -4,11 +4,11 @@ from __future__ import annotations
 from .client_request import ClientRequest
 
 
-class OutletReqeustBuilder:
+class OutletRequestBuilder:
     """Outlet request builder"""
 
     @classmethod
-    def set_state_reqeust(cls, state: str, plug_indx: int | None) -> ClientRequest:
+    def set_state_request(cls, state: str, plug_indx: int | None) -> ClientRequest:
         """Set device state."""
         params: dict[str, str | int] = {"state": state}
         if plug_indx is not None:
