@@ -22,5 +22,6 @@ class YoLinkClientError(Exception):
 class YoLinkAuthFailError(YoLinkClientError):
     """YoLink Auth Fail"""
 
-    def __init__(self, code: str, desc: str) -> None:
-        super().__init__(code, desc)
+
+class YoLinkDeviceConnectionFailed(YoLinkClientError):
+    """YoLink device connection failed."""

@@ -6,13 +6,13 @@ from aiohttp import ClientSession
 class YoLinkAuthMgr(metaclass=abc.ABCMeta):
     """YoLink API Authentication Manager."""
 
-    def __init__(self, webSession: ClientSession) -> None:
+    def __init__(self, session: ClientSession) -> None:
         """YoLink Auth Manager"""
-        self.webSession = webSession
+        self._session = session
 
     def client_session(self) -> ClientSession:
         """Get client session."""
-        return self.webSession
+        return self._session
 
     @abc.abstractmethod
     def access_token(self) -> str:

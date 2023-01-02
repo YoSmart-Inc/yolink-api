@@ -1,7 +1,6 @@
 """Client request"""
 from typing import Any
 
-
 class ClientRequest:
     """Client request"""
 

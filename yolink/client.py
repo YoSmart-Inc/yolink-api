@@ -1,11 +1,12 @@
 """YoLink Client."""
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from aiohttp import ClientError, ClientResponse
+from tenacity import retry, stop_after_attempt, retry_if_exception_type
 
 from .const import YOLINK_API_GATE
 from .auth_mgr import YoLinkAuthMgr
-from .exception import YoLinkClientError
+from .exception import YoLinkClientError, YoLinkDeviceConnectionFailed
 from .model import BRDP
 
 
@@ -16,7 +17,9 @@ class YoLinkClient:
         """Init YoLink Client"""
         self._auth_mgr = auth_mgr
 
-    async def request(self, method: str, url: str, auth_required: bool = True, **kwargs: Any) -> ClientResponse:
+    async def request(
+        self, method: str, url: str, auth_required: bool = True, **kwargs: Any
+    ) -> ClientResponse:
         """Proxy Request and add Auth/CV headers."""
         headers = kwargs.pop("headers", {})
         params = kwargs.pop("params", None)
@@ -54,7 +57,11 @@ class YoLinkClient:
         """Call Http Request with POST Method"""
         return await self.request("POST", url, True, **kwargs)
 
-    async def call_yolink_api(self, bsdp: Dict, **kwargs: Any) -> BRDP:
+    @retry(
+        retry=retry_if_exception_type(YoLinkDeviceConnectionFailed),
+        stop=stop_after_attempt(3),
+    )
+    async def execute(self, bsdp: Dict, **kwargs: Any) -> BRDP:
         """Call YoLink Api"""
         try:
             yl_resp = await self.post(YOLINK_API_GATE, json=bsdp, **kwargs)
@@ -62,16 +69,8 @@ class YoLinkClient:
             _yl_body = await yl_resp.text()
             brdp = BRDP.parse_raw(_yl_body)
             brdp.check_response()
-        except ClientError:
-            raise YoLinkClientError("-1", "client error")
-        except YoLinkClientError as err:
-            raise err
+        except ClientError as client_err:
+            raise YoLinkClientError("-3", "client execution failure!") from client_err
+        except YoLinkClientError as yl_client_err:
+            raise yl_client_err
         return brdp
-
-    async def get_auth_devices(self, **kwargs: Any) -> BRDP:
-        """Get auth devices."""
-        return await self.call_yolink_api({"method": "Home.getDeviceList"}, **kwargs)
-
-    async def get_general_info(self, **kwargs: Any) -> BRDP:
-        """Get general info."""
-        return await self.call_yolink_api({"method": "Home.getGeneralInfo"}, **kwargs)

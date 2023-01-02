@@ -4,7 +4,7 @@ from __future__ import annotations
 from .client_request import ClientRequest
 
 
-class OutletRequestBuilder:
+class OutletRequestBuilder:  # pylint: disable=too-few-public-methods
     """Outlet request builder"""
 
     @classmethod

@@ -70,5 +70,6 @@ target/
 
 # VS Code
 .vscode/
+.history/
 
 

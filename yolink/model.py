@@ -1,8 +1,12 @@
 """YoLink Basic Model."""
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
-from .exception import YoLinkAuthFailError, YoLinkClientError
+from .exception import (
+    YoLinkAuthFailError,
+    YoLinkClientError,
+    YoLinkDeviceConnectionFailed,
+)
 
 
 class BRDP(BaseModel):
@@ -11,7 +15,7 @@ class BRDP(BaseModel):
     code: Optional[str]
     desc: Optional[str]
     method: Optional[str]
-    data: Dict
+    data: Dict[str, Any]
     event: Optional[str]
 
     def check_response(self):
@@ -19,6 +23,8 @@ class BRDP(BaseModel):
         if self.code != "000000":
             if self.code == "000103":
                 raise YoLinkAuthFailError(self.code, self.desc)
+            if self.code == "000201":
+                raise YoLinkDeviceConnectionFailed(self.code, self.desc)
             raise YoLinkClientError(self.code, self.desc)
 
 
@@ -27,14 +33,14 @@ class BSDPHelper:
 
     _bsdp: Dict
 
-    def __init__(self, deviceId: str, deviceToken: str, method: str):
+    def __init__(self, device_id: str, device_token: str, method: str):
         """Constanst."""
         self._bsdp = {"method": method, "params": {}}
-        if deviceId is not None:
-            self._bsdp["targetDevice"] = deviceId
-            self._bsdp["token"] = deviceToken
+        if device_id is not None:
+            self._bsdp["targetDevice"] = device_id
+            self._bsdp["token"] = device_token
 
-    def addParams(self, params: Dict):
+    def add_params(self, params: Dict):
         """Build params of BSDP."""
         self._bsdp["params"].update(params)
         return self

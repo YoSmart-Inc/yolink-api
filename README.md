@@ -2,6 +2,12 @@
 
 ## Changelog
 
+### 0.2.0
+
+* Add retry when connect to device failure.
+* Add YoLink FlexFob support.
+* Change api structure.
+
 ### 0.1.0
 
 * bug fix for mqtt reconnect fail by authentication information expired.
