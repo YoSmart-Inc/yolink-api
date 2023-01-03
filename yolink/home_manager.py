@@ -1,17 +1,17 @@
 """YoLink home manager."""
-
+from __future__ import annotations
 import threading
 from typing import Any
-from .device import YoLinkDevice
-from .client import YoLinkClient
 from .auth_mgr import YoLinkAuthMgr
+from .client import YoLinkClient
+from .device import YoLinkDevice
+from .exception import YoLinkClientError
+from .message_listener import MessageListener
 from .model import BRDP
 from .mqtt_client import YoLinkMqttClient
-from .message_listener import MessageListener
-from .exception import YoLinkClientError
 
 
-class HomeManager:
+class YoLinkHome:
     """YoLink home manager."""
 
     _instance = None
@@ -33,20 +33,25 @@ class HomeManager:
     ) -> None:
         """Init YoLink home."""
         if not auth_mgr:
-            raise YoLinkClientError("-1", "auth_mgr is required")
+            raise YoLinkClientError("-1001", "setup failed, auth_mgr is required!")
         if not listener:
-            raise YoLinkClientError("-2", "listener is required")
+            raise YoLinkClientError(
+                "-1002", "setup failed, message listener is required!"
+            )
         self._http_client = YoLinkClient(auth_mgr)
         home_info: BRDP = await self.async_get_home_info()
+        # load home devices
+        await self.async_load_home_devices()
+        # setup yolink mqtt connection
         self._message_listener = listener
-        self._mqtt_client = YoLinkMqttClient(auth_mgr)
-        self._mqtt_client.connect(home_info.data["id"], self._message_listener)
+        self._mqtt_client = YoLinkMqttClient(auth_mgr, self._home_devices)
+        await self._mqtt_client.connect(home_info.data["id"], self._message_listener)
 
     async def async_unload(self) -> None:
         """Unload YoLink home."""
         self._home_devices = {}
         self._http_client = None
-        self._mqtt_client.disconnect()
+        await self._mqtt_client.disconnect()
         self._message_listener = None
         self._mqtt_client = None
 
@@ -56,18 +61,22 @@ class HomeManager:
             {"method": "Home.getGeneralInfo"}, **kwargs
         )
 
-    async def async_get_home_devices(self, **kwargs: Any) -> list[YoLinkDevice]:
+    async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
         with self._lock:
             response: BRDP = await self._http_client.execute(
                 {"method": "Home.getDeviceList"}, **kwargs
             )
             for _device in response.data["devices"]:
-                self._home_devices[_device.device_id] = YoLinkDevice(
+                self._home_devices[_device["deviceId"]] = YoLinkDevice(
                     _device, self._http_client
                 )
+        return self._home_devices
+
+    def get_devices(self) -> list[YoLinkDevice]:
+        """Get home devices."""
         return self._home_devices.values()
 
-    def get_home_device(self, device_id: str) -> YoLinkDevice | None:
-        """Get home device by device id."""
+    def get_device(self, device_id: str) -> YoLinkDevice | None:
+        """Get home device via device id."""
         return self._home_devices.get(device_id)

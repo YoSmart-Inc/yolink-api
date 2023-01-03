@@ -1,4 +1,4 @@
-"""YoLink Client."""
+"""YoLink client."""
 from typing import Any, Dict
 
 from aiohttp import ClientError, ClientResponse
@@ -11,10 +11,10 @@ from .model import BRDP
 
 
 class YoLinkClient:
-    """YoLink Client."""
+    """YoLink client."""
 
     def __init__(self, auth_mgr: YoLinkAuthMgr) -> None:
-        """Init YoLink Client"""
+        """Init YoLink client"""
         self._auth_mgr = auth_mgr
 
     async def request(
@@ -59,7 +59,7 @@ class YoLinkClient:
 
     @retry(
         retry=retry_if_exception_type(YoLinkDeviceConnectionFailed),
-        stop=stop_after_attempt(3),
+        stop=stop_after_attempt(2),
     )
     async def execute(self, bsdp: Dict, **kwargs: Any) -> BRDP:
         """Call YoLink Api"""
@@ -70,7 +70,9 @@ class YoLinkClient:
             brdp = BRDP.parse_raw(_yl_body)
             brdp.check_response()
         except ClientError as client_err:
-            raise YoLinkClientError("-3", "client execution failure!") from client_err
+            raise YoLinkClientError(
+                "-1003", "yolink client request failed!"
+            ) from client_err
         except YoLinkClientError as yl_client_err:
             raise yl_client_err
         return brdp
