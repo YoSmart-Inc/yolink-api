@@ -51,7 +51,7 @@ class YoLinkMqttClient:
 
         try:
             self._mqtt_client.connect_async(
-                YOLINK_API_MQTT_BROKER, YOLINK_API_MQTT_BROKER_PORT, 60
+                YOLINK_API_MQTT_BROKER, YOLINK_API_MQTT_BROKER_PORT, 600
             )
             self._mqtt_client.loop_start()
         except OSError as err:
@@ -83,7 +83,7 @@ class YoLinkMqttClient:
                 ).result()
                 self._mqtt_client.username_pw_set(new_token, "")
                 self._mqtt_client.connect_async(
-                    YOLINK_API_MQTT_BROKER, YOLINK_API_MQTT_BROKER_PORT, 60
+                    YOLINK_API_MQTT_BROKER, YOLINK_API_MQTT_BROKER_PORT, 600
                 )
                 return
             except Exception:
