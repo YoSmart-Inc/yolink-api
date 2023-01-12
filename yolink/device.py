@@ -1,6 +1,7 @@
 """YoLink Device."""
 from __future__ import annotations
 import abc
+from typing import Optional
 
 from tenacity import RetryError
 from pydantic import BaseModel, Field, validator
@@ -25,7 +26,7 @@ class YoLinkDeviceMode(BaseModel):
     device_name: str = Field(alias=ATTR_DEVICE_NAME)
     device_token: str = Field(alias=ATTR_DEVICE_TOKEN)
     device_type: str = Field(alias=ATTR_DEVICE_TYPE)
-    device_parent_id: str = Field(alias=ATTR_DEVICE_PARENT_ID)
+    device_parent_id: Optional[str] = Field(alias=ATTR_DEVICE_PARENT_ID)
 
     @validator("device_parent_id")
     def check_parent_id(cls, val):
