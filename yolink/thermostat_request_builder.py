@@ -10,10 +10,10 @@ from .client_request import ClientRequest
 class ThermostatState(BaseModel):
     """Thermostat State."""
 
-    low_temp: Optional[float]
-    high_temp: Optional[float]
+    lowTemp: Optional[float]
+    highTemp: Optional[float]
     mode: Optional[str]
-    fan_mode: Optional[str]
+    fan: Optional[str]
     sche: Optional[str]
 
 
