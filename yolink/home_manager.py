@@ -4,7 +4,7 @@ import threading
 from typing import Any
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
-from .device import YoLinkDevice
+from .device import YoLinkDevice, YoLinkDeviceMode
 from .exception import YoLinkClientError
 from .message_listener import MessageListener
 from .model import BRDP
@@ -69,7 +69,7 @@ class YoLinkHome:
             )
             for _device in response.data["devices"]:
                 self._home_devices[_device["deviceId"]] = YoLinkDevice(
-                    _device, self._http_client
+                    YoLinkDeviceMode(**_device), self._http_client
                 )
         return self._home_devices
 

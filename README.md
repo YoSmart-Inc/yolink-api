@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 0.2.3
+
+* api improve.
+
 ### 0.2.1
 
 * Add retry when connect to device failure.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 
 from tenacity import RetryError
+from pydantic import BaseModel, Field, validator
 
 from .client import YoLinkClient
 from .exception import YoLinkClientError
@@ -17,15 +18,32 @@ from .const import (
 from .client_request import ClientRequest
 
 
+class YoLinkDeviceMode(BaseModel):
+    """YoLink Device Mode."""
+
+    device_id: str = Field(alias=ATTR_DEVICE_ID)
+    device_name: str = Field(alias=ATTR_DEVICE_NAME)
+    device_token: str = Field(alias=ATTR_DEVICE_TOKEN)
+    device_type: str = Field(alias=ATTR_DEVICE_TYPE)
+    device_parent_id: str = Field(alias=ATTR_DEVICE_PARENT_ID)
+
+    @validator("device_parent_id")
+    def check_parent_id(cls, val):
+        """Checking and replace parent id."""
+        if val == "null":
+            val = None
+        return val
+
+
 class YoLinkDevice(metaclass=abc.ABCMeta):
     """YoLink device."""
 
-    def __init__(self, device_info: dict, client: YoLinkClient) -> None:
-        self.device_id: str = device_info[ATTR_DEVICE_ID]
-        self.device_name: str = device_info[ATTR_DEVICE_NAME]
-        self.device_net_token: str = device_info[ATTR_DEVICE_TOKEN]
-        self.device_type: str = device_info[ATTR_DEVICE_TYPE]
-        self.parent_id: str = device_info[ATTR_DEVICE_PARENT_ID]
+    def __init__(self, device: YoLinkDeviceMode, client: YoLinkClient) -> None:
+        self.device_id: str = device.device_id
+        self.device_name: str = device.device_name
+        self.device_token: str = device.device_token
+        self.device_type: str = device.device_type
+        self.parent_id: str = device.device_parent_id
         self._client: YoLinkClient = client
 
     async def __invoke(self, method: str, params: dict | None) -> BRDP:
@@ -33,7 +51,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         try:
             bsdp_helper = BSDPHelper(
                 self.device_id,
-                self.device_net_token,
+                self.device_token,
                 f"{self.device_type}.{method}",
             )
             if params is not None:
