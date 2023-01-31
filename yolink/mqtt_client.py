@@ -21,27 +21,21 @@ _LOGGER = logging.getLogger(__name__)
 class YoLinkMqttClient:
     """YoLink mqtt client."""
 
-    _background_tasks = set()
-
     def __init__(
         self, auth_manager: YoLinkAuthMgr, home_devices: dict[str, YoLinkDevice]
     ) -> None:
-        self.loop = asyncio.get_running_loop()
         self._home_topic = None
         self._message_listener = None
         self._auth_mgr = auth_manager
         self._home_devices = home_devices
         self._running = False
+        self._listener_task = None
 
     async def connect(self, home_id: str, listener: MessageListener) -> None:
         """Connect to yolink mqtt broker."""
         self._home_topic = f"yl-home/{home_id}/+/report"
         self._message_listener = listener
-        loop = asyncio.get_event_loop()
-        task = loop.create_task(self._listen())
-        # Save a reference to the task so it doesn't get garbage collected
-        self._background_tasks.add(task)
-        task.add_done_callback(self._background_tasks.remove)
+        self._listener_task = asyncio.create_task(self._listen())
 
     async def _listen(self):
         # check and fresh access token
@@ -69,9 +63,12 @@ class YoLinkMqttClient:
                         _LOGGER.error("token expired or invalid, acquire new one.")
                         await self._auth_mgr.check_and_refresh_token()
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
+        if self._listener_task is None:
+            return
+        self._listener_task.cancel()
+        self._listener_task = None
         self._running = False
-        _LOGGER.info("Disconnected from yolink mqtt broker.")
 
     def _process_message(self, msg) -> None:
         """Mqtt on message."""

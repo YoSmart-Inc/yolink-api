@@ -1,6 +1,7 @@
 """YoLink home manager."""
 from __future__ import annotations
 import threading
+import asyncio
 from typing import Any
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
@@ -63,7 +64,7 @@ class YoLinkHome:
 
     async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
-        with self._lock:
+        async with asyncio.Lock():
             response: BRDP = await self._http_client.execute(
                 {"method": "Home.getDeviceList"}, **kwargs
             )
