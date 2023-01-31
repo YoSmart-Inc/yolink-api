@@ -1,7 +1,5 @@
 """YoLink home manager."""
 from __future__ import annotations
-import threading
-import asyncio
 from typing import Any
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
@@ -15,19 +13,12 @@ from .mqtt_client import YoLinkMqttClient
 class YoLinkHome:
     """YoLink home manager."""
 
-    _instance = None
-    _lock = threading.Lock()
-    _home_devices: dict[str, YoLinkDevice] = {}
-    _http_client: YoLinkClient = None
-    _mqtt_client: YoLinkMqttClient = None
-    _message_listener: MessageListener = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if not cls._instance:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
+    def __init__(self) -> None:
+        """Init YoLink Home Manager."""
+        self._home_devices: dict[str, YoLinkDevice] = {}
+        self._http_client: YoLinkClient = None
+        self._mqtt_client: YoLinkMqttClient = None
+        self._message_listener: MessageListener = None
 
     async def async_setup(
         self, auth_mgr: YoLinkAuthMgr, listener: MessageListener
@@ -64,14 +55,13 @@ class YoLinkHome:
 
     async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
-        async with asyncio.Lock():
-            response: BRDP = await self._http_client.execute(
-                {"method": "Home.getDeviceList"}, **kwargs
+        response: BRDP = await self._http_client.execute(
+            {"method": "Home.getDeviceList"}, **kwargs
+        )
+        for _device in response.data["devices"]:
+            self._home_devices[_device["deviceId"]] = YoLinkDevice(
+                YoLinkDeviceMode(**_device), self._http_client
             )
-            for _device in response.data["devices"]:
-                self._home_devices[_device["deviceId"]] = YoLinkDevice(
-                    YoLinkDeviceMode(**_device), self._http_client
-                )
         return self._home_devices
 
     def get_devices(self) -> list[YoLinkDevice]:
