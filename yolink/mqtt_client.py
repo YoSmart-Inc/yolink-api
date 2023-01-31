@@ -28,8 +28,6 @@ class YoLinkMqttClient:
     ) -> None:
         self.loop = asyncio.get_running_loop()
         self._home_topic = None
-        self._client_id = None
-        self._mqtt_client = None
         self._message_listener = None
         self._auth_mgr = auth_manager
         self._home_devices = home_devices
