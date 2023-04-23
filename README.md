@@ -1,41 +1,22 @@
 # YoLink Python library for HA Integration
 
-## Changelog
+## Supported devices
 
-### 0.2.3
-
-* api improve.
-
-### 0.2.1
-
-* Add retry when connect to device failure.
-* Add YoLink FlexFob support.
-* Change api structure.
-
-### 0.1.0
-
-* bug fix for mqtt reconnect fail by authentication information expired.
-
-### 0.0.9 (2022.7.12)
-
-* add parent device
-
-### 0.0.8 (2022.6.8)
-
-* ignore invalid data report
-
-### 0.0.7 (2022.6.6)
-
-* Fix Mqtt Empty data report, Failure by validation
-
-### 0.0.6 (2022.6.2)
-
-* Fix https support
-
-### 0.0.5 (2022.5.9)
-
-* Change YoLink library dependency
-
-### 0.0.4 (2022.5.2)
-
-* YoLink first version python client
+* YS6602/4 YS6704 (outlet | plug)
+* YS7103/4/5 (siren)
+* YS7704/7705/7706 (door sensor)
+* YS7707 (Contact Sensor)
+* YS7804/5 (motion sensor)
+* YS7903/4 (leak sensor)
+* YS8003/4/5/6 (temperature/humidity sensor)
+* YS7201 (vibration sensor)
+* YS7606/7 (lock)
+* YS4909 YS5001 (valve controller)
+* YS5705/6 (switch)
+* YS7A01/2 (CO & Smoke Sensor)
+* YS4002/3 (Thermostat)
+* YS4906/8 (Garage Door Sensor/ Garage Door Controller)
+* YS5707 (Dimmer)
+* YS6801/2 (MultiOutlet)
+* YS3604 (FlexFob)
+* YS7106 (Power Failure Alarm)
