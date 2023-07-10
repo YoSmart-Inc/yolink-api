@@ -1,8 +1,8 @@
 """YoLink mqtt client."""
 import asyncio
-import asyncio_mqtt as aiomqtt
 import logging
 from typing import Any
+import aiomqtt
 from pydantic import ValidationError
 from .auth_mgr import YoLinkAuthMgr
 from .const import (
@@ -64,6 +64,7 @@ class YoLinkMqttClient:
                         await self._auth_mgr.check_and_refresh_token()
 
     async def disconnect(self) -> None:
+        """UnRegister listener"""
         if self._listener_task is None:
             return
         self._listener_task.cancel()
