@@ -62,6 +62,8 @@ class YoLinkMqttClient:
                     if mqtt_err.rc in [4, 5]:
                         _LOGGER.error("token expired or invalid, acquire new one.")
                         await self._auth_mgr.check_and_refresh_token()
+            except Exception:
+                _LOGGER.error("unexcept exception:", exc_info=True)
 
     async def disconnect(self) -> None:
         """UnRegister listener"""
