@@ -5,11 +5,7 @@ from typing import Any
 import aiomqtt
 from pydantic import ValidationError
 from .auth_mgr import YoLinkAuthMgr
-from .const import (
-    YOLINK_API_MQTT_BROKER,
-    YOLINK_API_MQTT_BROKER_PORT,
-    ATTR_DEVICE_SMART_REMOTER,
-)
+from .const import ATTR_DEVICE_SMART_REMOTER, Endpoints
 from .device import YoLinkDevice
 from .message_listener import MessageListener
 from .model import BRDP
@@ -22,8 +18,16 @@ class YoLinkMqttClient:
     """YoLink mqtt client."""
 
     def __init__(
-        self, auth_manager: YoLinkAuthMgr, home_devices: dict[str, YoLinkDevice]
+        self,
+        endpoint: Endpoints,
+        hostname: str,
+        port: int,
+        auth_manager: YoLinkAuthMgr,
+        home_devices: dict[str, YoLinkDevice],
     ) -> None:
+        self._endpoint = endpoint
+        self._hostname = hostname
+        self._port = port
         self._home_topic = None
         self._message_listener = None
         self._auth_mgr = auth_manager
@@ -45,8 +49,8 @@ class YoLinkMqttClient:
         while self._running:
             try:
                 async with aiomqtt.Client(
-                    hostname=YOLINK_API_MQTT_BROKER,
-                    port=YOLINK_API_MQTT_BROKER_PORT,
+                    hostname=self._hostname,
+                    port=self._port,
                     username=self._auth_mgr.access_token(),
                     password="",
                     keepalive=50,
@@ -56,11 +60,21 @@ class YoLinkMqttClient:
                         async for message in messages:
                             self._process_message(message)
             except aiomqtt.MqttError as mqtt_err:
-                _LOGGER.error("yolink mqtt client disconnected!")
+                if isinstance(mqtt_err, aiomqtt.MqttCodeError):
+                    _LOGGER.error(
+                        "[%s] mqtt client disconnected!, reason: %s",
+                        self._endpoint.name,
+                        mqtt_err,
+                    )
+                else:
+                    _LOGGER.error("[%s] mqtt client disconnected!", self._endpoint.name)
                 await asyncio.sleep(reconnect_interval)
                 if isinstance(mqtt_err, aiomqtt.MqttCodeError):
                     if mqtt_err.rc in [4, 5]:
-                        _LOGGER.error("token expired or invalid, acquire new one.")
+                        _LOGGER.error(
+                            "[%s] token expired or invalid, acquire new one.",
+                            self._endpoint.name,
+                        )
                         await self._auth_mgr.check_and_refresh_token()
             except Exception:
                 _LOGGER.error("unexcept exception:", exc_info=True)
@@ -76,8 +90,9 @@ class YoLinkMqttClient:
     def _process_message(self, msg) -> None:
         """Mqtt on message."""
         _LOGGER.debug(
-            "Received message on %s%s: %s",
+            "[%s] Received message on %s%s: %s",
             msg.topic,
+            self._endpoint.name,
             " (retained)" if msg.retain else "",
             msg.payload[0:8192],
         )

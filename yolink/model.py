@@ -3,9 +3,11 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 from .exception import (
-    YoLinkAuthFailError,
+    YoLinkAuthFailedError,
     YoLinkClientError,
-    YoLinkDeviceConnectionFailed,
+    YoLinkDeviceDisconnectedError,
+    YoLinkDeviceBusyError,
+    YoLinkAPIRateLimitError,
 )
 
 
@@ -22,9 +24,13 @@ class BRDP(BaseModel):
         """Check API Response."""
         if self.code != "000000":
             if self.code == "000103":
-                raise YoLinkAuthFailError(self.code, self.desc)
+                raise YoLinkAuthFailedError(self.code, self.desc)
             if self.code == "000201":
-                raise YoLinkDeviceConnectionFailed(self.code, self.desc)
+                raise YoLinkDeviceDisconnectedError(self.code, self.desc)
+            if self.code == "020104":
+                raise YoLinkDeviceBusyError(self.code, self.desc)
+            if self.code == "010301":
+                raise YoLinkAPIRateLimitError(self.code, self.desc)
             raise YoLinkClientError(self.code, self.desc)
 
 

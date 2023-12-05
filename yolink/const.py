@@ -1,15 +1,23 @@
 """Const for YoLink Client."""
+from enum import Enum
+
 YOLINK_HOST = "api.yosmart.com"
+YOLINK_HOST_EU = "api-eu.yosmart.com"
 YOLINK_HTTP_HOST = f"https://{YOLINK_HOST}"
+YOLINK_HTTP_HOST_EU = f"https://{YOLINK_HOST_EU}"
 OAUTH2_AUTHORIZE = f"{YOLINK_HTTP_HOST}/oauth/v2/authorization.htm"
 OAUTH2_TOKEN = f"{YOLINK_HTTP_HOST}/open/yolink/token"
 YOLINK_API_GATE = f"{YOLINK_HTTP_HOST}/open/yolink/v2/api"
+YOLINK_API_GATE_EU = f"{YOLINK_HTTP_HOST_EU}/open/yolink/v2/api"
 YOLINK_API_MQTT_BROKER = YOLINK_HOST
+YOLINK_API_MQTT_BROKER_EU = YOLINK_HOST_EU
 YOLINK_API_MQTT_BROKER_PORT = 8003
 
+ATTR_ENDPOINT = "endpoint"
 ATTR_DEVICE_ID = "deviceId"
 ATTR_DEVICE_NAME = "name"
 ATTR_DEVICE_TYPE = "type"
+ATTR_DEVICE_MODEL_NAME = "modelName"
 ATTR_DEVICE_TOKEN = "token"
 ATTR_DEVICE_PARENT_ID = "parentDeviceId"
 
@@ -33,3 +41,12 @@ ATTR_DEVICE_POWER_FAILURE_ALARM = "PowerFailureAlarm"
 ATTR_DEVICE_HUB = "Hub"
 ATTR_DEVICE_SPEAKER_HUB = "SpeakerHub"
 ATTR_DEVICE_FINGER = "Finger"
+
+
+class Endpoints(Enum):
+    """
+    Device Endpoints
+    """
+
+    US = "UC"
+    EU = "EC"

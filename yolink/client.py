@@ -4,9 +4,9 @@ from typing import Any, Dict
 from aiohttp import ClientError, ClientResponse
 from tenacity import retry, stop_after_attempt, retry_if_exception_type
 
-from .const import YOLINK_API_GATE
+from .const import YOLINK_API_GATE, YOLINK_API_GATE_EU, Endpoints
 from .auth_mgr import YoLinkAuthMgr
-from .exception import YoLinkClientError, YoLinkDeviceConnectionFailed
+from .exception import YoLinkClientError, YoLinkDeviceDisconnectedError
 from .model import BRDP
 
 
@@ -49,22 +49,21 @@ class YoLinkClient:
             method, url, **kwargs, headers=headers, params=params, data=data, timeout=8
         )
 
-    async def get(self, url: str, **kwargs: Any) -> ClientResponse:
-        """Call http request with Get Method."""
-        return await self.request("GET", url, True, **kwargs)
-
     async def post(self, url: str, **kwargs: Any) -> ClientResponse:
         """Call Http Request with POST Method"""
         return await self.request("POST", url, True, **kwargs)
 
     @retry(
-        retry=retry_if_exception_type(YoLinkDeviceConnectionFailed),
+        retry=retry_if_exception_type(YoLinkDeviceDisconnectedError),
         stop=stop_after_attempt(2),
     )
-    async def execute(self, bsdp: Dict, **kwargs: Any) -> BRDP:
+    async def execute(self, endpoint: Endpoints, bsdp: Dict, **kwargs: Any) -> BRDP:
         """Call YoLink Api"""
         try:
-            yl_resp = await self.post(YOLINK_API_GATE, json=bsdp, **kwargs)
+            api_gate = (
+                YOLINK_API_GATE_EU if endpoint == Endpoints.EU else YOLINK_API_GATE
+            )
+            yl_resp = await self.post(api_gate, json=bsdp, **kwargs)
             yl_resp.raise_for_status()
             _yl_body = await yl_resp.text()
             brdp = BRDP.parse_raw(_yl_body)
