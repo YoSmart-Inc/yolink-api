@@ -9,7 +9,7 @@ def smart_remoter_message_resolver(msg_data: dict[str, Any]) -> dict[str, Any]:
     btn_press_event = msg_data.get("event")
     if btn_press_event is not None:
         key_mask = btn_press_event["keyMask"]
-        button_sequence = int(log2(key_mask)) + 1
+        button_sequence = 0 if key_mask == 0 else (int(log2(key_mask)) + 1)
         # replace with button sequence
         msg_data["event"]["keyMask"] = button_sequence
     return msg_data
