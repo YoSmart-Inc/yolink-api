@@ -1,6 +1,10 @@
 """YoLink Basic Model."""
 from typing import Any, Dict, Optional
-from pydantic import BaseModel
+
+try:
+    from pydantic.v1 import BaseModel
+except ImportError:
+    from pydantic import BaseModel
 
 from .exception import (
     YoLinkAuthFailError,
@@ -12,11 +16,11 @@ from .exception import (
 class BRDP(BaseModel):
     """BRDP of YoLink API."""
 
-    code: Optional[str]
-    desc: Optional[str]
-    method: Optional[str]
-    data: Dict[str, Any]
-    event: Optional[str]
+    code: Optional[str] = None
+    desc: Optional[str] = None
+    method: Optional[str] = None
+    data: Dict[str, Any] = None
+    event: Optional[str] = None
 
     def check_response(self):
         """Check API Response."""
