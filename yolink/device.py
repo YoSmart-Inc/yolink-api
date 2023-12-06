@@ -4,7 +4,11 @@ import abc
 from typing import Optional
 
 from tenacity import RetryError
-from pydantic import BaseModel, Field, validator
+
+try:
+    from pydantic.v1 import BaseModel, Field, validator
+except ImportError:
+    from pydantic import BaseModel, Field, validator
 
 from .client import YoLinkClient
 from .exception import YoLinkClientError

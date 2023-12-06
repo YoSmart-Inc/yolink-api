@@ -3,7 +3,12 @@ import asyncio
 import logging
 from typing import Any
 import aiomqtt
-from pydantic import ValidationError
+
+try:
+    from pydantic.v1 import ValidationError
+except ImportError:
+    from pydantic import ValidationError
+
 from .auth_mgr import YoLinkAuthMgr
 from .const import (
     YOLINK_API_MQTT_BROKER,
