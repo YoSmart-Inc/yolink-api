@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "aiohttp>=3.8.1",
-        "aiomqtt>=1.0.0",
+        "aiomqtt==2.0.0",
         "pydantic>=1.9.0",
         "tenacity>=8.1.0",
     ],

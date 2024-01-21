@@ -56,10 +56,9 @@ class YoLinkMqttClient:
                     password="",
                     keepalive=50,
                 ) as client:
-                    async with client.messages() as messages:
-                        await client.subscribe(self._home_topic)
-                        async for message in messages:
-                            self._process_message(message)
+                    await client.subscribe(self._home_topic)
+                    async for message in client.messages:
+                        self._process_message(message)
             except aiomqtt.MqttError as mqtt_err:
                 _LOGGER.error("yolink mqtt client disconnected!")
                 await asyncio.sleep(reconnect_interval)
