@@ -11,6 +11,7 @@ except ImportError:
     from pydantic import BaseModel, Field, validator
 
 from .client import YoLinkClient
+from .endpoint import Endpoint, Endpoints
 from .exception import YoLinkClientError
 from .model import BRDP, BSDPHelper
 from .const import (
@@ -18,6 +19,7 @@ from .const import (
     ATTR_DEVICE_NAME,
     ATTR_DEVICE_TOKEN,
     ATTR_DEVICE_TYPE,
+    ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
 )
 from .client_request import ClientRequest
@@ -30,6 +32,7 @@ class YoLinkDeviceMode(BaseModel):
     device_name: str = Field(alias=ATTR_DEVICE_NAME)
     device_token: str = Field(alias=ATTR_DEVICE_TOKEN)
     device_type: str = Field(alias=ATTR_DEVICE_TYPE)
+    device_model_name: str = Field(alias=ATTR_DEVICE_MODEL_NAME)
     device_parent_id: Optional[str] = Field(alias=ATTR_DEVICE_PARENT_ID)
 
     @validator("device_parent_id")
@@ -48,6 +51,12 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_name: str = device.device_name
         self.device_token: str = device.device_token
         self.device_type: str = device.device_type
+        self.device_model_name: str = device.device_model_name
+        self.device_endpoint: Endpoint = (
+            Endpoints.EU.value
+            if device.device_model_name.endswith("-EC")
+            else Endpoints.US.value
+        )
         self.parent_id: str = device.device_parent_id
         self._client: YoLinkClient = client
 
@@ -61,7 +70,9 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
             )
             if params is not None:
                 bsdp_helper.add_params(params)
-            return await self._client.execute(bsdp_helper.build())
+            return await self._client.execute(
+                url=self.device_endpoint.url, bsdp=bsdp_helper.build()
+            )
         except RetryError as err:
             raise YoLinkClientError("-1003", "yolink client request failed!") from err
 

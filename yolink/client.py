@@ -4,7 +4,6 @@ from typing import Any, Dict
 from aiohttp import ClientError, ClientResponse
 from tenacity import retry, stop_after_attempt, retry_if_exception_type
 
-from .const import YOLINK_API_GATE
 from .auth_mgr import YoLinkAuthMgr
 from .exception import YoLinkClientError, YoLinkDeviceConnectionFailed
 from .model import BRDP
@@ -61,10 +60,10 @@ class YoLinkClient:
         retry=retry_if_exception_type(YoLinkDeviceConnectionFailed),
         stop=stop_after_attempt(2),
     )
-    async def execute(self, bsdp: Dict, **kwargs: Any) -> BRDP:
+    async def execute(self, url: str, bsdp: Dict, **kwargs: Any) -> BRDP:
         """Call YoLink Api"""
         try:
-            yl_resp = await self.post(YOLINK_API_GATE, json=bsdp, **kwargs)
+            yl_resp = await self.post(url, json=bsdp, **kwargs)
             yl_resp.raise_for_status()
             _yl_body = await yl_resp.text()
             brdp = BRDP.parse_raw(_yl_body)
