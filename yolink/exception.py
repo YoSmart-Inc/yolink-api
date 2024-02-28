@@ -25,3 +25,7 @@ class YoLinkAuthFailError(YoLinkClientError):
 
 class YoLinkDeviceConnectionFailed(YoLinkClientError):
     """YoLink device connection failed."""
+
+
+class YoLinkUnSupportedMethodError(YoLinkClientError):
+    """YoLink Unsupported method error."""
