@@ -52,6 +52,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_token: str = device.device_token
         self.device_type: str = device.device_type
         self.device_model_name: str = device.device_model_name
+        self.device_attrs: dict | None = None
         self.device_endpoint: Endpoint = (
             Endpoints.EU.value
             if device.device_model_name.endswith("-EC")
@@ -83,6 +84,10 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
     async def fetch_state(self) -> BRDP:
         """Call *.fetchState with device to fetch state data."""
         return await self.__invoke("fetchState", None)
+
+    async def get_external_data(self) -> BRDP:
+        """Call *.getExternalData to get device settings."""
+        return await self.__invoke("getExternalData", None)
 
     async def call_device(self, request: ClientRequest) -> BRDP:
         """Device invoke."""

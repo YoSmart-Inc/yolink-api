@@ -10,6 +10,7 @@ from .exception import (
     YoLinkAuthFailError,
     YoLinkClientError,
     YoLinkDeviceConnectionFailed,
+    YoLinkUnSupportedMethodError,
 )
 
 
@@ -29,6 +30,8 @@ class BRDP(BaseModel):
                 raise YoLinkAuthFailError(self.code, self.desc)
             if self.code == "000201":
                 raise YoLinkDeviceConnectionFailed(self.code, self.desc)
+            if self.code == "010203":
+                raise YoLinkUnSupportedMethodError(self.code, self.desc)
             raise YoLinkClientError(self.code, self.desc)
 
 
