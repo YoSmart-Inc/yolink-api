@@ -10,13 +10,14 @@ except ImportError:
     from pydantic import ValidationError
 
 from .auth_mgr import YoLinkAuthMgr
-from .const import (
-    ATTR_DEVICE_SMART_REMOTER,
-)
+from .const import ATTR_DEVICE_SMART_REMOTER, ATTR_DEVICE_WATER_DEPTH_SENSOR
 from .device import YoLinkDevice
 from .message_listener import MessageListener
 from .model import BRDP
-from .message_resolver import smart_remoter_message_resolver
+from .message_resolver import (
+    smart_remoter_message_resolve,
+    water_depth_sensor_message_resolve,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -132,5 +133,7 @@ class YoLinkMqttClient:
     def __resolve_message(self, device: YoLinkDevice, msg_data: dict[str, Any]) -> None:
         """Resolve device message."""
         if device.device_type == ATTR_DEVICE_SMART_REMOTER:
-            msg_data = smart_remoter_message_resolver(msg_data)
+            msg_data = smart_remoter_message_resolve(msg_data)
+        if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
+            msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
         self._message_listener.on_message(device, msg_data)
