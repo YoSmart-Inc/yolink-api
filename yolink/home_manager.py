@@ -5,7 +5,7 @@ from typing import Any
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
 from .device import YoLinkDevice, YoLinkDeviceMode
-from .exception import YoLinkClientError
+from .exception import YoLinkClientError, YoLinkUnSupportedMethodError
 from .message_listener import MessageListener
 from .model import BRDP
 from .mqtt_client import YoLinkMqttClient
@@ -88,6 +88,13 @@ class YoLinkHome:
             self._endpoints[
                 _yl_device.device_endpoint.name
             ] = _yl_device.device_endpoint
+            try:
+                dev_external_data_resp = await _yl_device.get_external_data()
+                _yl_device.device_attrs = dev_external_data_resp.data["extData"]
+            except YoLinkUnSupportedMethodError:
+                _LOGGER.debug(
+                    "getExternalData is not supported for: %s", _yl_device.device_type
+                )
             self._home_devices[_device["deviceId"]] = _yl_device
 
         return self._home_devices

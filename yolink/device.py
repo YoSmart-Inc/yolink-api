@@ -21,8 +21,10 @@ from .const import (
     ATTR_DEVICE_TYPE,
     ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
+    ATTR_DEVICE_WATER_DEPTH_SENSOR,
 )
 from .client_request import ClientRequest
+from yolink.message_resolver import water_depth_sensor_message_resolve
 
 
 class YoLinkDeviceMode(BaseModel):
@@ -83,7 +85,12 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
 
     async def fetch_state(self) -> BRDP:
         """Call *.fetchState with device to fetch state data."""
-        return await self.__invoke("fetchState", None)
+        state_brdp: BRDP = await self.__invoke("fetchState", None)
+        if self.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
+            water_depth_sensor_message_resolve(
+                state_brdp.data["state"], self.device_attrs
+            )
+        return state_brdp
 
     async def get_external_data(self) -> BRDP:
         """Call *.getExternalData to get device settings."""
