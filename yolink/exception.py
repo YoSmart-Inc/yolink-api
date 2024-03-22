@@ -1,7 +1,11 @@
 """YoLink Client Error."""
 
 
-class YoLinkClientError(Exception):
+class YoLinkError(Exception):
+    """YoLink Error."""
+
+
+class YoLinkClientError(YoLinkError):
     """YoLink Client Error.
 
     code: Error Code

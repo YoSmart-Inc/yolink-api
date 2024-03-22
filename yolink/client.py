@@ -1,4 +1,5 @@
 """YoLink client."""
+
 from typing import Any, Dict
 
 from aiohttp import ClientError, ClientResponse
