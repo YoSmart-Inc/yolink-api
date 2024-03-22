@@ -22,11 +22,18 @@ def water_depth_sensor_message_resolve(
     msg_data: dict[str, Any], dev_attrs: dict[str, Any]
 ) -> dict[str, Any]:
     """WaterDepthSensor message resolve."""
-    if msg_data is not None and dev_attrs is not None:
+    if msg_data is not None:
         depth_value = msg_data.get("waterDepth")
         if depth_value is not None:
-            dev_range = dev_attrs["range"]["range"]
-            dev_density = dev_attrs["range"]["density"]
+            # default range settings if range and desity was not set.
+            dev_range = 5
+            dev_density = 1
+            if (
+                dev_attrs is not None
+                and (range_attrs := dev_attrs.get("range")) is not None
+            ):
+                dev_range = range_attrs["range"]
+                dev_density = range_attrs["density"]
             msg_data["waterDepth"] = round(
                 (dev_range * (depth_value / 1000)) / dev_density, 2
             )

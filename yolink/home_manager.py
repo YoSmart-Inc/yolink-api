@@ -91,7 +91,7 @@ class YoLinkHome:
             )
             try:
                 dev_external_data_resp = await _yl_device.get_external_data()
-                _yl_device.device_attrs = dev_external_data_resp.data["extData"]
+                _yl_device.device_attrs = dev_external_data_resp.data.get("extData")
             except YoLinkUnSupportedMethodError:
                 _LOGGER.debug(
                     "getExternalData is not supported for: %s", _yl_device.device_type
