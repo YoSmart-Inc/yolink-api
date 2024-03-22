@@ -1,4 +1,5 @@
 """Client request"""
+
 from typing import Any
 
 

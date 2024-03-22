@@ -1,4 +1,7 @@
 """Const for YoLink Client."""
+
+from typing import Final
+
 OAUTH2_AUTHORIZE = "https://api.yosmart.com/oauth/v2/authorization.htm"
 OAUTH2_TOKEN = "https://api.yosmart.com/open/yolink/token"
 
@@ -30,3 +33,6 @@ ATTR_DEVICE_HUB = "Hub"
 ATTR_DEVICE_SPEAKER_HUB = "SpeakerHub"
 ATTR_DEVICE_FINGER = "Finger"
 ATTR_DEVICE_WATER_DEPTH_SENSOR = "WaterDepthSensor"
+ATTR_DEVICE_WATER_METER_CONTROLLER = "WaterMeterController"
+
+UNIT_NOT_RECOGNIZED_TEMPLATE: Final = "{} is not a recognized {} unit."

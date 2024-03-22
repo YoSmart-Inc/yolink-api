@@ -1,4 +1,5 @@
 """YoLink Device."""
+
 from __future__ import annotations
 import abc
 from typing import Optional
@@ -22,9 +23,13 @@ from .const import (
     ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
+    ATTR_DEVICE_WATER_METER_CONTROLLER,
 )
 from .client_request import ClientRequest
-from yolink.message_resolver import water_depth_sensor_message_resolve
+from .message_resolver import (
+    water_depth_sensor_message_resolve,
+    water_meter_sensor_message_resolver,
+)
 
 
 class YoLinkDeviceMode(BaseModel):
@@ -90,6 +95,8 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
             water_depth_sensor_message_resolve(
                 state_brdp.data["state"], self.device_attrs
             )
+        if self.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
+            water_meter_sensor_message_resolver(state_brdp.data["state"])
         return state_brdp
 
     async def get_external_data(self) -> BRDP:

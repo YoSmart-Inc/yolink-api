@@ -1,4 +1,5 @@
 """YoLink authorization manager."""
+
 import abc
 from aiohttp import ClientSession
 
