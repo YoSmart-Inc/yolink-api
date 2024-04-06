@@ -5,6 +5,7 @@ import logging
 from typing import Any
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
+from .const import ATTR_DEVICE_WATER_DEPTH_SENSOR
 from .device import YoLinkDevice, YoLinkDeviceMode
 from .exception import YoLinkClientError, YoLinkUnSupportedMethodError
 from .message_listener import MessageListener
@@ -13,6 +14,8 @@ from .mqtt_client import YoLinkMqttClient
 from .endpoint import Endpoint, Endpoints
 
 _LOGGER = logging.getLogger(__name__)
+
+has_external_data_devices = [ATTR_DEVICE_WATER_DEPTH_SENSOR]
 
 
 class YoLinkHome:
@@ -89,13 +92,15 @@ class YoLinkHome:
             self._endpoints[_yl_device.device_endpoint.name] = (
                 _yl_device.device_endpoint
             )
-            try:
-                dev_external_data_resp = await _yl_device.get_external_data()
-                _yl_device.device_attrs = dev_external_data_resp.data.get("extData")
-            except YoLinkUnSupportedMethodError:
-                _LOGGER.debug(
-                    "getExternalData is not supported for: %s", _yl_device.device_type
-                )
+            if _yl_device.device_type in has_external_data_devices:
+                try:
+                    dev_external_data_resp = await _yl_device.get_external_data()
+                    _yl_device.device_attrs = dev_external_data_resp.data.get("extData")
+                except YoLinkUnSupportedMethodError:
+                    _LOGGER.debug(
+                        "getExternalData is not supported for: %s",
+                        _yl_device.device_type,
+                    )
             self._home_devices[_device["deviceId"]] = _yl_device
 
         return self._home_devices
