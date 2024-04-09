@@ -22,6 +22,7 @@ from .const import (
     ATTR_DEVICE_TYPE,
     ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
+    ATTR_DEVICE_SERVICE_ZONE,
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
     ATTR_DEVICE_WATER_METER_CONTROLLER,
 )
@@ -41,6 +42,7 @@ class YoLinkDeviceMode(BaseModel):
     device_type: str = Field(alias=ATTR_DEVICE_TYPE)
     device_model_name: str = Field(alias=ATTR_DEVICE_MODEL_NAME)
     device_parent_id: Optional[str] = Field(alias=ATTR_DEVICE_PARENT_ID)
+    device_service_zone: Optional[str] = Field(alias=ATTR_DEVICE_SERVICE_ZONE)
 
     @validator("device_parent_id")
     def check_parent_id(cls, val):
@@ -60,13 +62,20 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_type: str = device.device_type
         self.device_model_name: str = device.device_model_name
         self.device_attrs: dict | None = None
-        self.device_endpoint: Endpoint = (
-            Endpoints.EU.value
-            if device.device_model_name.endswith("-EC")
-            else Endpoints.US.value
-        )
         self.parent_id: str = device.device_parent_id
         self._client: YoLinkClient = client
+        if device.device_service_zone is not None:
+            self.device_endpoint: Endpoint = (
+                Endpoints.EU.value
+                if device.device_service_zone.startswith("eu_")
+                else Endpoints.US.value
+            )
+        else:
+            self.device_endpoint: Endpoint = (
+                Endpoints.EU.value
+                if device.device_model_name.endswith("-EC")
+                else Endpoints.US.value
+            )
 
     async def __invoke(self, method: str, params: dict | None) -> BRDP:
         """Invoke device."""
