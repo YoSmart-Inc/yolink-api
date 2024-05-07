@@ -118,7 +118,13 @@ class YoLinkMqttClient:
                     return
                 msg_event = msg_data.event.split(".")
                 msg_type = msg_event[len(msg_event) - 1]
-                if msg_type not in ["Report", "Alert", "StatusChange", "getState"]:
+                if msg_type not in [
+                    "Report",
+                    "Alert",
+                    "StatusChange",
+                    "getState",
+                    "setState",
+                ]:
                     return
                 device = self._home_devices.get(device_id)
                 if device is None:
