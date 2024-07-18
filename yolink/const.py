@@ -35,5 +35,6 @@ ATTR_DEVICE_SPEAKER_HUB = "SpeakerHub"
 ATTR_DEVICE_FINGER = "Finger"
 ATTR_DEVICE_WATER_DEPTH_SENSOR = "WaterDepthSensor"
 ATTR_DEVICE_WATER_METER_CONTROLLER = "WaterMeterController"
+ATTR_DEVICE_LOCK_V2 = "LockV2"
 
 UNIT_NOT_RECOGNIZED_TEMPLATE: Final = "{} is not a recognized {} unit."
