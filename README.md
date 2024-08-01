@@ -8,6 +8,7 @@
 - YS3605-UC (YoLink On/OffFob)
 - YS3606-UC (YoLink DimmerFob)
 - YS3607-UC (YoLink SirenFob)
+- YS3614-UC (YoLink Mini FlexFob)
 - YS4002-UC (YoLink Thermostat)
 - YS4003-UC (YoLink Thermostat Heatpump)
 - YS4906-UC + YS7706-UC (Garage Door Kit 1)

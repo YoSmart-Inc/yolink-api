@@ -84,6 +84,10 @@ class YoLinkHome:
 
     async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
+        # sync eu devices, will remove in future
+        await self._http_client.execute(
+            url=Endpoints.EU.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
+        )
         response: BRDP = await self._http_client.execute(
             url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
         )
