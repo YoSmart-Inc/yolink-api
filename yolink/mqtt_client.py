@@ -58,7 +58,7 @@ class YoLinkMqttClient:
     async def _listen(self):
         # check and fresh access token
         await self._auth_mgr.check_and_refresh_token()
-        reconnect_interval = 5
+        reconnect_interval = 30
         self._running = True
         while self._running:
             try:
