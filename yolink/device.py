@@ -25,11 +25,13 @@ from .const import (
     ATTR_DEVICE_SERVICE_ZONE,
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
     ATTR_DEVICE_WATER_METER_CONTROLLER,
+    ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
 )
 from .client_request import ClientRequest
 from .message_resolver import (
     water_depth_sensor_message_resolve,
     water_meter_sensor_message_resolve,
+    multi_water_meter_controller_message_resolver,
 )
 
 
@@ -106,6 +108,8 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
             )
         if self.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
             water_meter_sensor_message_resolve(state_brdp.data["state"])
+        if self.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
+            multi_water_meter_controller_message_resolver(state_brdp.data["state"])
         return state_brdp
 
     async def get_external_data(self) -> BRDP:

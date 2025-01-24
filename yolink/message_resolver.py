@@ -74,3 +74,52 @@ def water_meter_sensor_message_resolve(msg_data: dict[str, Any]) -> dict[str, An
         )
     msg_data["valve_state"] = meter_state["valve"]
     return msg_data
+
+
+def multi_water_meter_controller_message_resolver(
+    msg_data: dict[str, Any],
+) -> dict[str, Any]:
+    """MultiWaterMeterController message resolve."""
+    if (meter_state := msg_data.get("state")) is None:
+        return msg_data
+    meter_step_factor: int = 10
+    meter_reading_values: dict = meter_state.get("meters")
+    if meter_reading_values is not None:
+        meter_unit = UnitOfVolume.GALLONS
+        if (meter_attrs := msg_data.get("attributes")) is not None:
+            meter_step_factor = (
+                _meter_step_factor
+                if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
+                is not None
+                else 10
+            )
+            meter_unit = (
+                UnitOfVolume(_meter_unit)
+                if (_meter_unit := meter_attrs.get("meterUnit")) is not None
+                else UnitOfVolume.GALLONS
+            )
+        meter_reading_values["0"] = VolumeConverter.convert(
+            meter_reading_values["0"] / meter_step_factor,
+            meter_unit,
+            UnitOfVolume.CUBIC_METERS,
+        )
+        meter_reading_values["1"] = VolumeConverter.convert(
+            meter_reading_values["1"] / meter_step_factor,
+            meter_unit,
+            UnitOfVolume.CUBIC_METERS,
+        )
+        msg_data["meter_1_reading"] = float(
+            Decimal(meter_reading_values["0"]).quantize(
+                Decimal(".000"), rounding=ROUND_DOWN
+            )
+        )
+        msg_data["meter_2_reading"] = float(
+            Decimal(meter_reading_values["1"]).quantize(
+                Decimal(".000"), rounding=ROUND_DOWN
+            )
+        )
+    # for some reason meter value can't be read
+    if (meter_valves := meter_state.get("valves")) is not None:
+        msg_data["valve_1_state"] = meter_valves["0"]
+        msg_data["valve_2_state"] = meter_valves["1"]
+    return msg_data

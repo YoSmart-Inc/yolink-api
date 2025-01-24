@@ -15,6 +15,7 @@ from .const import (
     ATTR_DEVICE_SMART_REMOTER,
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
     ATTR_DEVICE_WATER_METER_CONTROLLER,
+    ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
 )
 from .device import YoLinkDevice
 from .message_listener import MessageListener
@@ -23,6 +24,7 @@ from .message_resolver import (
     smart_remoter_message_resolve,
     water_depth_sensor_message_resolve,
     water_meter_sensor_message_resolve,
+    multi_water_meter_controller_message_resolver,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -153,4 +155,6 @@ class YoLinkMqttClient:
             msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
         if device.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
             msg_data = water_meter_sensor_message_resolve(msg_data)
+        if device.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
+            msg_data = multi_water_meter_controller_message_resolver(msg_data)
         self._message_listener.on_message(device, msg_data)
