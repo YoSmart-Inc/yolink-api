@@ -1,4 +1,5 @@
 """YoLink Basic Model."""
+
 from typing import Any, Dict, Optional
 
 try:
