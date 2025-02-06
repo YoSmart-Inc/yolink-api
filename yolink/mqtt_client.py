@@ -124,6 +124,7 @@ class YoLinkMqttClient:
                     "StatusChange",
                     "getState",
                     "setState",
+                    "DevEvent",
                 ]:
                     return
                 device = self._home_devices.get(device_id)
