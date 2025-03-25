@@ -7,14 +7,19 @@ from decimal import Decimal, ROUND_DOWN
 from .unit_helper import UnitOfVolume, VolumeConverter
 
 
-def smart_remoter_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
+def smart_remoter_message_resolve(
+    event_type: str, msg_data: dict[str, Any]
+) -> dict[str, Any]:
     """SmartRemoter message resolve."""
     btn_press_event = msg_data.get("event")
     if btn_press_event is not None:
-        key_mask = btn_press_event["keyMask"]
-        button_sequence = 0 if key_mask == 0 else (int(log2(key_mask)) + 1)
-        # replace with button sequence
-        msg_data["event"]["keyMask"] = button_sequence
+        if event_type == "Report":
+            msg_data["event"] = None
+        else:
+            key_mask = btn_press_event["keyMask"]
+            button_sequence = 0 if key_mask == 0 else (int(log2(key_mask)) + 1)
+            # replace with button sequence
+            msg_data["event"]["keyMask"] = button_sequence
     return msg_data
 
 
@@ -40,7 +45,7 @@ def water_depth_sensor_message_resolve(
     return msg_data
 
 
-def water_meter_sensor_message_resolver(msg_data: dict[str, Any]) -> dict[str, Any]:
+def water_meter_sensor_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
     """WaterMeterController message resolve."""
     if (meter_state := msg_data.get("state")) is None:
         return msg_data
