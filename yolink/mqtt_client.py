@@ -22,7 +22,7 @@ from .model import BRDP
 from .message_resolver import (
     smart_remoter_message_resolve,
     water_depth_sensor_message_resolve,
-    water_meter_sensor_message_resolver,
+    water_meter_sensor_message_resolve,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -137,18 +137,20 @@ class YoLinkMqttClient:
                         return
                     # post current device state to paired device
                     paired_device_state = {"state": msg_data.data.get("state")}
-                    self.__resolve_message(paired_device, paired_device_state)
-                self.__resolve_message(device, msg_data.data)
+                    self.__resolve_message(msg_type, paired_device, paired_device_state)
+                self.__resolve_message(msg_type, device, msg_data.data)
             except ValidationError:
                 # ignore invalidate message
                 _LOGGER.debug("Message invalidate.")
 
-    def __resolve_message(self, device: YoLinkDevice, msg_data: dict[str, Any]) -> None:
+    def __resolve_message(
+        self, event_type: str, device: YoLinkDevice, msg_data: dict[str, Any]
+    ) -> None:
         """Resolve device message."""
         if device.device_type == ATTR_DEVICE_SMART_REMOTER:
-            msg_data = smart_remoter_message_resolve(msg_data)
+            msg_data = smart_remoter_message_resolve(event_type, msg_data)
         if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
             msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
         if device.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            msg_data = water_meter_sensor_message_resolver(msg_data)
+            msg_data = water_meter_sensor_message_resolve(msg_data)
         self._message_listener.on_message(device, msg_data)
