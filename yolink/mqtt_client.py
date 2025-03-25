@@ -23,8 +23,8 @@ from .model import BRDP
 from .message_resolver import (
     smart_remoter_message_resolve,
     water_depth_sensor_message_resolve,
-    water_meter_sensor_message_resolve,
-    multi_water_meter_controller_message_resolver,
+    water_meter_controller_message_resolve,
+    multi_water_meter_controller_message_resolve,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ class YoLinkMqttClient:
         if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
             msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
         if device.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            msg_data = water_meter_sensor_message_resolve(msg_data)
+            msg_data = water_meter_controller_message_resolve(msg_data)
         if device.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
-            msg_data = multi_water_meter_controller_message_resolver(msg_data)
+            msg_data = multi_water_meter_controller_message_resolve(msg_data)
         self._message_listener.on_message(device, msg_data)

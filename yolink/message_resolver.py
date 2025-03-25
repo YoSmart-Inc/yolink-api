@@ -45,7 +45,7 @@ def water_depth_sensor_message_resolve(
     return msg_data
 
 
-def water_meter_sensor_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
+def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
     """WaterMeterController message resolve."""
     if (meter_state := msg_data.get("state")) is None:
         return msg_data
@@ -76,7 +76,7 @@ def water_meter_sensor_message_resolve(msg_data: dict[str, Any]) -> dict[str, An
     return msg_data
 
 
-def multi_water_meter_controller_message_resolver(
+def multi_water_meter_controller_message_resolve(
     msg_data: dict[str, Any],
 ) -> dict[str, Any]:
     """MultiWaterMeterController message resolve."""
