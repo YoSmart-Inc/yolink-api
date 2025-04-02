@@ -85,14 +85,20 @@ class YoLinkHome:
     async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
         # sync eu devices, will remove in future
-        await self._http_client.execute(
+        eu_response: BRDP = await self._http_client.execute(
             url=Endpoints.EU.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
         )
         response: BRDP = await self._http_client.execute(
             url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
         )
+        eu_dev_tokens = {}
+        for eu_device in eu_response.data["devices"]:
+            eu_dev_tokens[eu_device["deviceId"]] = eu_device["token"]
         for _device in response.data["devices"]:
             _yl_device = YoLinkDevice(YoLinkDeviceMode(**_device), self._http_client)
+            if _yl_device.device_endpoint == Endpoints.EU.value:
+                # sync eu device token
+                _yl_device.device_token = eu_dev_tokens.get(_yl_device.device_id)
             self._endpoints[_yl_device.device_endpoint.name] = (
                 _yl_device.device_endpoint
             )
