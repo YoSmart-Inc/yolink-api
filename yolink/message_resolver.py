@@ -11,6 +11,8 @@ def smart_remoter_message_resolve(
     event_type: str, msg_data: dict[str, Any]
 ) -> dict[str, Any]:
     """SmartRemoter message resolve."""
+    if msg_data is None:
+        return msg_data
     btn_press_event = msg_data.get("event")
     if btn_press_event is not None:
         if event_type == "Report":
@@ -47,6 +49,8 @@ def water_depth_sensor_message_resolve(
 
 def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
     """WaterMeterController message resolve."""
+    if msg_data is None:
+        return msg_data
     if (meter_state := msg_data.get("state")) is None:
         return msg_data
     meter_step_factor: int = 10
@@ -79,6 +83,8 @@ def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str
 def multi_water_meter_controller_message_resolve(
     msg_data: dict[str, Any],
 ) -> dict[str, Any]:
+    if msg_data is None:
+        return msg_data
     """MultiWaterMeterController message resolve."""
     if (meter_state := msg_data.get("state")) is None:
         return msg_data

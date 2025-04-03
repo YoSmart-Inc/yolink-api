@@ -104,12 +104,12 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         state_brdp: BRDP = await self.__invoke("fetchState", None)
         if self.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
             water_depth_sensor_message_resolve(
-                state_brdp.data["state"], self.device_attrs
+                state_brdp.data.get("state"), self.device_attrs
             )
         if self.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            water_meter_controller_message_resolve(state_brdp.data["state"])
+            water_meter_controller_message_resolve(state_brdp.data.get("state"))
         if self.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
-            multi_water_meter_controller_message_resolve(state_brdp.data["state"])
+            multi_water_meter_controller_message_resolve(state_brdp.data.get("state"))
         return state_brdp
 
     async def get_external_data(self) -> BRDP:
