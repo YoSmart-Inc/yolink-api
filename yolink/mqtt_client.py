@@ -154,7 +154,11 @@ class YoLinkMqttClient:
         if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
             msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
         if device.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            msg_data = water_meter_controller_message_resolve(msg_data)
+            msg_data = water_meter_controller_message_resolve(
+                msg_data, device.device_model_name
+            )
         if device.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
-            msg_data = multi_water_meter_controller_message_resolve(msg_data)
+            msg_data = multi_water_meter_controller_message_resolve(
+                msg_data, device.device_model_name
+            )
         self._message_listener.on_message(device, msg_data)
