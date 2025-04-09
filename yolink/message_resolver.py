@@ -47,7 +47,9 @@ def water_depth_sensor_message_resolve(
     return msg_data
 
 
-def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str, Any]:
+def water_meter_controller_message_resolve(
+    msg_data: dict[str, Any], device_model: str
+) -> dict[str, Any]:
     """WaterMeterController message resolve."""
     if msg_data is None:
         return msg_data
@@ -59,22 +61,35 @@ def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str
     if meter_value is not None:
         meter_unit = UnitOfVolume.GALLONS
         if (meter_attrs := msg_data.get("attributes")) is not None:
-            meter_step_factor = (
-                _meter_step_factor
-                if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
-                is not None
-                else 10
-            )
+            if device_model.startswith("YS5009"):
+                meter_step_factor = (
+                    1 / (_meter_step_factor / (1000 * 100))
+                    if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
+                    is not None
+                    else 10
+                )
+            else:
+                meter_step_factor = (
+                    _meter_step_factor
+                    if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
+                    is not None
+                    else 10
+                )
             meter_unit = (
                 UnitOfVolume(_meter_unit)
                 if (_meter_unit := meter_attrs.get("meterUnit")) is not None
                 else UnitOfVolume.GALLONS
             )
+        _meter_reading = None
+        if meter_step_factor < 0:
+            _meter_reading = meter_value * abs(meter_step_factor)
+        else:
+            _meter_reading = meter_value / meter_step_factor
         meter_value = VolumeConverter.convert(
-            meter_value / meter_step_factor, meter_unit, UnitOfVolume.CUBIC_METERS
+            _meter_reading, meter_unit, UnitOfVolume.CUBIC_METERS
         )
         msg_data["meter_reading"] = float(
-            Decimal(meter_value).quantize(Decimal(".000"), rounding=ROUND_DOWN)
+            Decimal(meter_value).quantize(Decimal(".00000"), rounding=ROUND_DOWN)
         )
     msg_data["valve_state"] = meter_state["valve"]
     return msg_data
@@ -82,6 +97,7 @@ def water_meter_controller_message_resolve(msg_data: dict[str, Any]) -> dict[str
 
 def multi_water_meter_controller_message_resolve(
     msg_data: dict[str, Any],
+    device_model: str,
 ) -> dict[str, Any]:
     if msg_data is None:
         return msg_data
@@ -93,35 +109,53 @@ def multi_water_meter_controller_message_resolve(
     if meter_reading_values is not None:
         meter_unit = UnitOfVolume.GALLONS
         if (meter_attrs := msg_data.get("attributes")) is not None:
-            meter_step_factor = (
-                _meter_step_factor
-                if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
-                is not None
-                else 10
-            )
+            if device_model.startswith("YS5029"):
+                meter_step_factor = (
+                    1 / (_meter_step_factor / (1000 * 100))
+                    if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
+                    is not None
+                    else 10
+                )
+            else:
+                meter_step_factor = (
+                    _meter_step_factor
+                    if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
+                    is not None
+                    else 10
+                )
             meter_unit = (
                 UnitOfVolume(_meter_unit)
                 if (_meter_unit := meter_attrs.get("meterUnit")) is not None
                 else UnitOfVolume.GALLONS
             )
+        _meter_1_reading = None
+        if meter_step_factor < 0:
+            _meter_1_reading = meter_reading_values["0"] * abs(meter_step_factor)
+        else:
+            _meter_1_reading = meter_reading_values["0"] / meter_step_factor
         meter_reading_values["0"] = VolumeConverter.convert(
-            meter_reading_values["0"] / meter_step_factor,
+            _meter_1_reading,
             meter_unit,
             UnitOfVolume.CUBIC_METERS,
         )
+        _meter_2_reading = None
+        if meter_step_factor < 0:
+            _meter_2_reading = meter_reading_values["1"] * abs(meter_step_factor)
+        else:
+            _meter_2_reading = meter_reading_values["1"] / meter_step_factor
         meter_reading_values["1"] = VolumeConverter.convert(
-            meter_reading_values["1"] / meter_step_factor,
+            _meter_2_reading,
             meter_unit,
             UnitOfVolume.CUBIC_METERS,
         )
         msg_data["meter_1_reading"] = float(
             Decimal(meter_reading_values["0"]).quantize(
-                Decimal(".000"), rounding=ROUND_DOWN
+                Decimal(".00000"), rounding=ROUND_DOWN
             )
         )
         msg_data["meter_2_reading"] = float(
             Decimal(meter_reading_values["1"]).quantize(
-                Decimal(".000"), rounding=ROUND_DOWN
+                Decimal(".00000"), rounding=ROUND_DOWN
             )
         )
     # for some reason meter value can't be read
