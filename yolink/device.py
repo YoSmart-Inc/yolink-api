@@ -26,6 +26,7 @@ from .const import (
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
     ATTR_DEVICE_WATER_METER_CONTROLLER,
     ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
+    DEVICE_MODELS_SUPPORT_MODE_SWITCHING,
 )
 from .client_request import ClientRequest
 from .message_resolver import (
@@ -129,3 +130,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         if self.parent_id is None or self.parent_id == "null":
             return None
         return self.parent_id
+
+    def is_support_mode_switching(self) -> bool:
+        """Check if the device supports mode switching."""
+        return self.device_model_name in DEVICE_MODELS_SUPPORT_MODE_SWITCHING
