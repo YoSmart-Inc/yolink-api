@@ -44,6 +44,7 @@ ATTR_DEVICE_LOCK_V2 = "LockV2"
 ATTR_DEVICE_SOIL_TH_SENSOR = "SoilThcSensor"
 ATTR_DEVICE_SPRINKLER = "Sprinkler"
 ATTR_DEVICE_SPRINKLER_V2 = "SprinklerV2"
+ATTR_DEVICE_SMOKE_ALARM = "SmokeAlarm"
 
 UNIT_NOT_RECOGNIZED_TEMPLATE: Final = "{} is not a recognized {} unit."
 

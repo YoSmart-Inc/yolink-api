@@ -55,4 +55,7 @@
 - YS5006-UC (FlowSmart Control)
 - YS5007-UC (FlowSmart Meter)
 - YS5008-UC (FlowSmart All-in-One)
-- YS8017-UC (Thermometer)  
+- YS8017-UC (Thermometer)
+- YS5009-UC (LeakStop Controller)
+- YS5029-UC (LeakStop Controller 2 Channel)
+- YS8009-UC (Soil Temperature & Humidity Sensor)
