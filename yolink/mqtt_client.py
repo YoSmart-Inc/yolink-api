@@ -11,21 +11,10 @@ except ImportError:
     from pydantic import ValidationError
 
 from .auth_mgr import YoLinkAuthMgr
-from .const import (
-    ATTR_DEVICE_SMART_REMOTER,
-    ATTR_DEVICE_WATER_DEPTH_SENSOR,
-    ATTR_DEVICE_WATER_METER_CONTROLLER,
-    ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
-)
 from .device import YoLinkDevice
 from .message_listener import MessageListener
 from .model import BRDP
-from .message_resolver import (
-    smart_remoter_message_resolve,
-    water_depth_sensor_message_resolve,
-    water_meter_controller_message_resolve,
-    multi_water_meter_controller_message_resolve,
-)
+from .message_resolver import resolve_sub_message
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -139,26 +128,15 @@ class YoLinkMqttClient:
                         return
                     # post current device state to paired device
                     paired_device_state = {"state": msg_data.data.get("state")}
-                    self.__resolve_message(msg_type, paired_device, paired_device_state)
-                self.__resolve_message(msg_type, device, msg_data.data)
+                    self.__resolve_message(paired_device, paired_device_state, msg_type)
+                self.__resolve_message(device, msg_data.data, msg_type)
             except ValidationError:
                 # ignore invalidate message
                 _LOGGER.debug("Message invalidate.")
 
     def __resolve_message(
-        self, event_type: str, device: YoLinkDevice, msg_data: dict[str, Any]
+        self, device: YoLinkDevice, msg_data: dict[str, Any], msg_type: str
     ) -> None:
         """Resolve device message."""
-        if device.device_type == ATTR_DEVICE_SMART_REMOTER:
-            msg_data = smart_remoter_message_resolve(event_type, msg_data)
-        if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
-            msg_data = water_depth_sensor_message_resolve(msg_data, device.device_attrs)
-        if device.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            msg_data = water_meter_controller_message_resolve(
-                msg_data, device.device_model_name
-            )
-        if device.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
-            msg_data = multi_water_meter_controller_message_resolve(
-                msg_data, device.device_model_name
-            )
+        resolve_sub_message(device, msg_data, msg_type)
         self._message_listener.on_message(device, msg_data)

@@ -23,17 +23,10 @@ from .const import (
     ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
     ATTR_DEVICE_SERVICE_ZONE,
-    ATTR_DEVICE_WATER_DEPTH_SENSOR,
-    ATTR_DEVICE_WATER_METER_CONTROLLER,
-    ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
     DEVICE_MODELS_SUPPORT_MODE_SWITCHING,
 )
 from .client_request import ClientRequest
-from .message_resolver import (
-    water_depth_sensor_message_resolve,
-    water_meter_controller_message_resolve,
-    multi_water_meter_controller_message_resolve,
-)
+from .message_resolver import resolve_message
 
 
 class YoLinkDeviceMode(BaseModel):
@@ -103,18 +96,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
     async def fetch_state(self) -> BRDP:
         """Call *.fetchState with device to fetch state data."""
         state_brdp: BRDP = await self.__invoke("fetchState", None)
-        if self.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
-            water_depth_sensor_message_resolve(
-                state_brdp.data.get("state"), self.device_attrs
-            )
-        if self.device_type == ATTR_DEVICE_WATER_METER_CONTROLLER:
-            water_meter_controller_message_resolve(
-                state_brdp.data.get("state"), self.device_model_name
-            )
-        if self.device_type == ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER:
-            multi_water_meter_controller_message_resolve(
-                state_brdp.data.get("state"), self.device_model_name
-            )
+        resolve_message(self, state_brdp.data.get("state"))
         return state_brdp
 
     async def get_external_data(self) -> BRDP:
