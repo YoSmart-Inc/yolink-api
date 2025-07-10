@@ -50,7 +50,7 @@ def water_depth_sensor_message_resolve(
                 dev_range = range_attrs["range"]
                 dev_density = range_attrs["density"]
             msg_data["waterDepth"] = round(
-                (dev_range * (depth_value / 1000)) / dev_density, 2
+                (dev_range * (depth_value / 1000)) / dev_density, 3
             )
 
 
