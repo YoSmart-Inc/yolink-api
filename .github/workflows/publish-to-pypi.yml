@@ -9,17 +9,17 @@ jobs:
     name: Builds and publishes releases to PyPI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.0.2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v3.1.2
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
-      - name: Install wheel
+          python-version: 3.13
+      - name: Install build
         run: >-
-          pip install wheel==0.45.1
+          pip install build
       - name: Build
         run: >-
-          python3 setup.py sdist bdist_wheel
+          python3 -m build
       - name: Publish release to PyPI
         uses: pypa/gh-action-pypi-publish@v1.5.0
         with:
