@@ -67,7 +67,7 @@ class YoLinkClient:
             yl_resp = await self.post(url, json=bsdp, **kwargs)
             yl_resp.raise_for_status()
             _yl_body = await yl_resp.text()
-            brdp = BRDP.parse_raw(_yl_body)
+            brdp = BRDP.model_validate_json(_yl_body)
             brdp.check_response()
         except ClientError as client_err:
             raise YoLinkClientError(

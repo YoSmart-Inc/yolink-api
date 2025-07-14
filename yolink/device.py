@@ -4,12 +4,8 @@ from __future__ import annotations
 import abc
 from typing import Optional
 
+from pydantic import BaseModel, Field, field_validator
 from tenacity import RetryError
-
-try:
-    from pydantic.v1 import BaseModel, Field, validator
-except ImportError:
-    from pydantic import BaseModel, Field, validator
 
 from .client import YoLinkClient
 from .endpoint import Endpoint, Endpoints
@@ -40,8 +36,9 @@ class YoLinkDeviceMode(BaseModel):
     device_parent_id: Optional[str] = Field(alias=ATTR_DEVICE_PARENT_ID)
     device_service_zone: Optional[str] = Field(alias=ATTR_DEVICE_SERVICE_ZONE)
 
-    @validator("device_parent_id")
-    def check_parent_id(cls, val):
+    @field_validator("device_parent_id")
+    @classmethod
+    def check_parent_id(cls, val: Optional[str]) -> Optional[str]:
         """Checking and replace parent id."""
         if val == "null":
             val = None

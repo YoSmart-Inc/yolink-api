@@ -3,10 +3,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic import BaseModel
 
 from .client_request import ClientRequest
 
