@@ -2,10 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic import BaseModel
 
 from .exception import (
     YoLinkAuthFailError,
