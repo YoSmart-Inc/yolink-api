@@ -58,7 +58,7 @@ class YoLinkMqttClient:
                     port=self._broker_port,
                     username=self._auth_mgr.access_token(),
                     password="",
-                    keepalive=50,
+                    keepalive=60,
                 ) as client:
                     _LOGGER.info(
                         "[%s] connecting to yolink mqtt broker.", self._endpoint
@@ -116,6 +116,7 @@ class YoLinkMqttClient:
                     "getState",
                     "setState",
                     "DevEvent",
+                    "waterReport",  # Sprinkler
                 ]:
                     return
                 device = self._home_devices.get(device_id)

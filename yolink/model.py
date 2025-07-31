@@ -27,7 +27,7 @@ class BRDP(BaseModel):
     def check_response(self):
         """Check API Response."""
         if self.code != "000000":
-            if self.code == "000103":
+            if self.code == "000103" or self.code == "010104":
                 raise YoLinkAuthFailError(self.code, self.desc)
             if self.code == "000201":
                 raise YoLinkDeviceConnectionFailed(self.code, self.desc)

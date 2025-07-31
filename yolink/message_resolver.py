@@ -13,6 +13,8 @@ from .const import (
     ATTR_DEVICE_WATER_METER_CONTROLLER,
     ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
     ATTR_DEVICE_SOIL_TH_SENSOR,
+    ATTR_DEVICE_SPRINKLER,
+    ATTR_DEVICE_SPRINKLER_V2,
 )
 
 if TYPE_CHECKING:
@@ -174,7 +176,35 @@ def soil_thc_sensor_message_resolve(
         msg_data["conductivity"] = state.get("conductivity")
 
 
-def resolve_message(device: YoLinkDevice, msg_data: dict[str, Any]) -> None:
+def sprinkler_message_resolve(
+    device: YoLinkDevice,
+    msg_data: dict[str, Any],
+    msg_type: str | None = None,
+) -> None:
+    """Sprinkler message resolve."""
+    if msg_data is not None:
+        if (state := msg_data.get("state")) is not None:
+            device._state = {"mode": state.get("mode")}
+            if (watering_data := state.get("watering")) is not None:
+                msg_data["valve"] = watering_data["left"] != watering_data["total"]
+        if msg_type == "waterReport":
+            if device._state is not None:
+                msg_data["state"] = {"mode": device._state.get("mode")}
+            if (event := msg_data.get("event")) is not None:
+                msg_data["valve"] = event == "start"
+
+
+def sprinkler_v2_message_resolve(
+    msg_data: dict[str, Any],
+) -> None:
+    """Sprinkler V2 message resolve."""
+    if msg_data is not None and ((state := msg_data.get("state")) is not None):
+        msg_data["valve"] = state.get("running")
+
+
+def resolve_message(
+    device: YoLinkDevice, msg_data: dict[str, Any], msg_type: str | None
+) -> None:
     """Resolve device message."""
     if device.device_type == ATTR_DEVICE_WATER_DEPTH_SENSOR:
         water_depth_sensor_message_resolve(msg_data, device.device_attrs)
@@ -184,6 +214,10 @@ def resolve_message(device: YoLinkDevice, msg_data: dict[str, Any]) -> None:
         multi_water_meter_controller_message_resolve(msg_data, device.device_model_name)
     elif device.device_type == ATTR_DEVICE_SOIL_TH_SENSOR:
         soil_thc_sensor_message_resolve(msg_data)
+    elif device.device_type == ATTR_DEVICE_SPRINKLER:
+        sprinkler_message_resolve(device, msg_data, msg_type)
+    elif device.device_type == ATTR_DEVICE_SPRINKLER_V2:
+        sprinkler_v2_message_resolve(msg_data)
 
 
 def resolve_sub_message(
@@ -193,4 +227,4 @@ def resolve_sub_message(
     if device.device_type == ATTR_DEVICE_SMART_REMOTER:
         smart_remoter_message_resolve(msg_data, msg_type)
     else:
-        resolve_message(device, msg_data)
+        resolve_message(device, msg_data, msg_type)
