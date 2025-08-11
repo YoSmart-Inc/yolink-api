@@ -13,7 +13,6 @@ except ImportError:
 
 from .client import YoLinkClient
 from .endpoint import Endpoint, Endpoints
-from .exception import YoLinkClientError
 from .model import BRDP, BSDPHelper
 from .const import (
     ATTR_DEVICE_ID,
@@ -27,6 +26,7 @@ from .const import (
 )
 from .client_request import ClientRequest
 from .message_resolver import resolve_message
+from .device_helper import get_device_net_mode
 
 
 class YoLinkDeviceMode(BaseModel):
@@ -60,6 +60,8 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_attrs: dict | None = None
         self.parent_id: str = device.device_parent_id
         self._client: YoLinkClient = client
+        self.class_mode: str = get_device_net_mode(device)
+        self._state: dict | None = {}
         if device.device_service_zone is not None:
             self.device_endpoint: Endpoint = (
                 Endpoints.EU.value
@@ -87,7 +89,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
                 url=self.device_endpoint.url, bsdp=bsdp_helper.build()
             )
         except RetryError as err:
-            raise YoLinkClientError("-1003", "yolink client request failed!") from err
+            raise err.last_attempt.result()
 
     async def get_state(self) -> BRDP:
         """Call *.getState with device to request realtime state data."""
@@ -95,8 +97,15 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
 
     async def fetch_state(self) -> BRDP:
         """Call *.fetchState with device to fetch state data."""
+        if self.device_type in ["Hub", "SpeakerHub"]:
+            return BRDP(
+                code="000000",
+                desc="success",
+                method="fetchState",
+                data={},
+            )
         state_brdp: BRDP = await self.__invoke("fetchState", None)
-        resolve_message(self, state_brdp.data.get("state"))
+        resolve_message(self, state_brdp.data.get("state"), None)
         return state_brdp
 
     async def get_external_data(self) -> BRDP:
