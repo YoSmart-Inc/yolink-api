@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .device import YoLinkDevice
+from .const import CLASS_AD_KEEPALIVE_TIME, CLASS_C_KEEPALIVE_TIME, HUB_KEEPALIVE_TIME
 
 from .const import (
     ATTR_DEVICE_LEAK_SENSOR,
@@ -39,14 +37,8 @@ from .const import (
 )
 
 
-def get_device_net_mode(device: YoLinkDevice) -> str | None:
+def get_net_type(device_type: str, device_model: str) -> str | None:
     """Get device network mode."""
-    # Assuming all devices are WiFi for this example
-    device_type = device.device_type
-    device_model = device.device_model_name
-    device_short_model = None
-    if device_model is not None:
-        device_short_model = device_model.split("-")[0]
     if device_type in [
         ATTR_DEVICE_LEAK_SENSOR,
         ATTR_DEVICE_DOOR_SENSOR,
@@ -60,7 +52,7 @@ def get_device_net_mode(device: YoLinkDevice) -> str | None:
         ATTR_DEVICE_WATER_DEPTH_SENSOR,
         ATTR_DEVICE_SMOKE_ALARM,
     ]:
-        if device_short_model in [
+        if device_model in [
             "YS7A02",
             "YS8006",
         ]:
@@ -77,7 +69,7 @@ def get_device_net_mode(device: YoLinkDevice) -> str | None:
         ATTR_DEVICE_DIMMER,
         ATTR_DEVICE_SPRINKLER,
     ]:
-        if device_short_model in [
+        if device_model in [
             #
             "YS4909",
             # Mainpulator(Class D)
@@ -102,7 +94,7 @@ def get_device_net_mode(device: YoLinkDevice) -> str | None:
         ATTR_DEVICE_MULTI_WATER_METER_CONTROLLER,
         ATTR_DEVICE_SPRINKLER_V2,
     ]:
-        if device_short_model in ["YS5007"]:
+        if device_model in ["YS5007"]:
             return "A"
         return "D"
     if device_type in [ATTR_DEVICE_HUB, ATTR_DEVICE_SPEAKER_HUB]:
@@ -110,12 +102,12 @@ def get_device_net_mode(device: YoLinkDevice) -> str | None:
     return None
 
 
-def get_device_keepalive_time(device: YoLinkDevice) -> int:
+def get_keepalive_time(device_type: str, device_model: str) -> int:
     """Get device keepalive time in seconds."""
-    device_class_mode = get_device_net_mode(device)
+    device_class_mode = get_net_type(device_type, device_model)
     if device_class_mode in ["A", "D"]:
-        return 32400
+        return CLASS_AD_KEEPALIVE_TIME
     if device_class_mode == "C":
-        return 3600
+        return CLASS_C_KEEPALIVE_TIME
     if device_class_mode == "Hub":
-        return 600
+        return HUB_KEEPALIVE_TIME

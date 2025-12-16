@@ -2,6 +2,17 @@
 
 from typing import Final
 
+MANUFACTURER = "YoLink"
+
+CLASS_AD_KEEPALIVE_TIME = 9 * 60 * 60  # 9 hours in seconds
+CLASS_C_KEEPALIVE_TIME = 70 * 60  # 70 minutes in seconds
+HUB_KEEPALIVE_TIME = 10 * 60  # 10 minutes in seconds
+
+
+ATTR_FIELD_LORA = "loraInfo"
+ATTR_FIELD_STATE = "state"
+
+
 OAUTH2_AUTHORIZE = "https://api.yosmart.com/oauth/v2/authorization.htm"
 OAUTH2_TOKEN = "https://api.yosmart.com/open/yolink/token"
 
@@ -46,6 +57,13 @@ ATTR_DEVICE_SOIL_TH_SENSOR = "SoilThcSensor"
 ATTR_DEVICE_SPRINKLER = "Sprinkler"
 ATTR_DEVICE_SPRINKLER_V2 = "SprinklerV2"
 ATTR_DEVICE_SMOKE_ALARM = "SmokeAlarm"
+
+# device models
+ATTR_DEVICE_MODEL_MULTIOUTLET_YS6801 = "YS6801"
+
+# water meter controller
+ATTR_DEVICE_MODEL_WATER_METER_YS5018 = "YS5018"
+
 
 UNIT_NOT_RECOGNIZED_TEMPLATE: Final = "{} is not a recognized {} unit."
 

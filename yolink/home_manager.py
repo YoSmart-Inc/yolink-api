@@ -24,10 +24,10 @@ class YoLinkHome:
     def __init__(self) -> None:
         """Init YoLink Home Manager."""
         self._home_devices: dict[str, YoLinkDevice] = {}
-        self._http_client: YoLinkClient = None
+        self._http_client: YoLinkClient
         self._endpoints: dict[str, Endpoint] = {}
         self._mqtt_clients: dict[str, YoLinkMqttClient] = {}
-        self._message_listener: MessageListener = None
+        self._message_listener: MessageListener
 
     async def async_setup(
         self, auth_mgr: YoLinkAuthMgr, listener: MessageListener
@@ -49,20 +49,20 @@ class YoLinkHome:
         for endpoint in self._endpoints.values():
             endpoint_mqtt_client = YoLinkMqttClient(
                 auth_manager=auth_mgr,
-                endpoint=endpoint.name,
+                endpoint=endpoint,
                 broker_host=endpoint.mqtt_broker_host,
                 broker_port=endpoint.mqtt_broker_port,
-                home_devices=self._home_devices,
+                devices=self._home_devices,
             )
             await endpoint_mqtt_client.connect(
-                home_info.data["id"], self._message_listener
+                f"yl-home/{home_info.data['id']}/+/report", self._message_listener
             )
             self._mqtt_clients[endpoint.name] = endpoint_mqtt_client
 
     async def async_unload(self) -> None:
         """Unload YoLink home."""
         self._home_devices = {}
-        self._http_client = None
+        self._http_client = None  # type: ignore
         for endpoint, client in self._mqtt_clients.items():
             _LOGGER.info(
                 "[%s] shutting down yolink mqtt client.",
@@ -73,32 +73,38 @@ class YoLinkHome:
                 "[%s] yolink mqtt client disconnected.",
                 endpoint,
             )
-        self._message_listener = None
+        self._message_listener = None  # type: ignore
         self._mqtt_clients = {}
 
     async def async_get_home_info(self, **kwargs: Any) -> BRDP:
         """Get home general information."""
         return await self._http_client.execute(
-            url=Endpoints.US.value.url, bsdp={"method": "Home.getGeneralInfo"}, **kwargs
+            url=Endpoints.US.value.url,  # type: ignore
+            bsdp={"method": "Home.getGeneralInfo"},
+            **kwargs,
         )
 
     async def async_load_home_devices(self, **kwargs: Any) -> dict[str, YoLinkDevice]:
         """Get home devices."""
         # sync eu devices, will remove in future
         eu_response: BRDP = await self._http_client.execute(
-            url=Endpoints.EU.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
+            url=Endpoints.EU.value.url,  # type: ignore
+            bsdp={"method": "Home.getDeviceList"},
+            **kwargs,
         )
         response: BRDP = await self._http_client.execute(
-            url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
+            url=Endpoints.US.value.url,  # type: ignore
+            bsdp={"method": "Home.getDeviceList"},
+            **kwargs,
         )
         eu_dev_tokens = {}
         for eu_device in eu_response.data["devices"]:
             eu_dev_tokens[eu_device["deviceId"]] = eu_device["token"]
         for _device in response.data["devices"]:
             _yl_device = YoLinkDevice(YoLinkDeviceMode(**_device), self._http_client)
-            if _yl_device.device_endpoint == Endpoints.EU.value:
+            if _yl_device.device_endpoint == Endpoints.EU.value:  # type: ignore
                 # sync eu device token
-                _yl_device.device_token = eu_dev_tokens.get(_yl_device.device_id)
+                _yl_device.device_token = eu_dev_tokens.get(_yl_device.device_id)  # type: ignore
             self._endpoints[_yl_device.device_endpoint.name] = (
                 _yl_device.device_endpoint
             )
@@ -117,7 +123,7 @@ class YoLinkHome:
 
     def get_devices(self) -> list[YoLinkDevice]:
         """Get home devices."""
-        return self._home_devices.values()
+        return list(self._home_devices.values())
 
     def get_device(self, device_id: str) -> YoLinkDevice | None:
         """Get home device via device id."""
