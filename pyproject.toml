@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yolink-api"
-version = "0.5.8"
+version = "0.5.9"
 license = "MIT"
 license-files = ["LICENSE"]
 description = "A library to authenticate with yolink device"
