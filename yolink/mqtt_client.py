@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
-import aiomqtt
+from aiomqtt import Client, MqttError, ProtocolVersion
 from pydantic import ValidationError
 
 from .auth_mgr import YoLinkAuthMgr
@@ -59,12 +59,13 @@ class YoLinkMqttClient:
             _username = self._auth_mgr.access_token()
         while self._running:
             try:
-                async with aiomqtt.Client(
+                async with Client(
                     hostname=self._broker_host,
                     port=self._broker_port,
                     username=_username,
                     password=_password,
                     keepalive=60,
+                    protocol=ProtocolVersion.V311,
                 ) as client:
                     _LOGGER.info(
                         "[%s] connecting to yolink mqtt broker.", self._endpoint.name
@@ -76,20 +77,15 @@ class YoLinkMqttClient:
                         )
                     async for message in client.messages:
                         self._process_message(message)
-            except aiomqtt.MqttError as mqtt_err:
+            except MqttError:
                 _LOGGER.error(
                     "[%s] yolink mqtt client disconnected!",
                     self._endpoint.name,
                     exc_info=True,
                 )
                 await asyncio.sleep(reconnect_interval)
-                if isinstance(mqtt_err, aiomqtt.MqttCodeError):
-                    if mqtt_err.rc in [4, 5]:
-                        _LOGGER.error(
-                            "[%s] token expired or invalid, acquire new one.",
-                            self._endpoint.name,
-                        )
-                        await self._auth_mgr.check_and_refresh_token()
+                # validate token before reconnecting
+                await self._auth_mgr.check_and_refresh_token()
             except Exception:
                 _LOGGER.error(
                     "[%s] unexcept exception:", self._endpoint.name, exc_info=True
