@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
-import aiomqtt
+from aiomqtt import Client, MqttError, ProtocolVersion
 from pydantic import ValidationError
 
 from .auth_mgr import YoLinkAuthMgr
@@ -12,6 +12,8 @@ from .device import YoLinkDevice
 from .message_listener import MessageListener
 from .model import BRDP
 from .message_resolver import resolve_sub_message
+from .endpoint import Endpoint
+from .local_auth_mgr import YoLinkLocalAuthMgr
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,24 +24,24 @@ class YoLinkMqttClient:
     def __init__(
         self,
         auth_manager: YoLinkAuthMgr,
-        endpoint: str,
+        endpoint: Endpoint,
         broker_host: str,
         broker_port: int,
-        home_devices: dict[str, YoLinkDevice],
+        devices: dict[str, YoLinkDevice],
     ) -> None:
         self._auth_mgr = auth_manager
         self._endpoint = endpoint
         self._broker_host = broker_host
         self._broker_port = broker_port
-        self._home_topic = None
+        self._topic = None
+        self._devices = devices
         self._message_listener = None
-        self._home_devices = home_devices
         self._running = False
         self._listener_task = None
 
-    async def connect(self, home_id: str, listener: MessageListener) -> None:
+    async def connect(self, topic: str, listener: MessageListener) -> None:
         """Connect to yolink mqtt broker."""
-        self._home_topic = f"yl-home/{home_id}/+/report"
+        self._topic = topic
         self._message_listener = listener
         self._listener_task = asyncio.create_task(self._listen())
 
@@ -48,38 +50,46 @@ class YoLinkMqttClient:
         await self._auth_mgr.check_and_refresh_token()
         reconnect_interval = 30
         self._running = True
+        _username = ""
+        _password = ""
+        if isinstance(self._auth_mgr, YoLinkLocalAuthMgr):
+            _password = self._auth_mgr._client_secret
+            _username = self._auth_mgr._client_id
+        else:
+            _username = self._auth_mgr.access_token()
         while self._running:
             try:
-                async with aiomqtt.Client(
+                async with Client(
                     hostname=self._broker_host,
                     port=self._broker_port,
-                    username=self._auth_mgr.access_token(),
-                    password="",
+                    username=_username,
+                    password=_password,
                     keepalive=60,
+                    protocol=ProtocolVersion.V311,
                 ) as client:
                     _LOGGER.info(
-                        "[%s] connecting to yolink mqtt broker.", self._endpoint
+                        "[%s] connecting to yolink mqtt broker.", self._endpoint.name
                     )
-                    await client.subscribe(self._home_topic)
-                    _LOGGER.info("[%s] yolink mqtt client connected.", self._endpoint)
+                    if self._topic is not None:
+                        await client.subscribe(self._topic)
+                        _LOGGER.info(
+                            "[%s] yolink mqtt client connected.", self._endpoint.name
+                        )
                     async for message in client.messages:
                         self._process_message(message)
-            except aiomqtt.MqttError as mqtt_err:
+            except MqttError:
                 _LOGGER.error(
                     "[%s] yolink mqtt client disconnected!",
-                    self._endpoint,
+                    self._endpoint.name,
                     exc_info=True,
                 )
                 await asyncio.sleep(reconnect_interval)
-                if isinstance(mqtt_err, aiomqtt.MqttCodeError):
-                    if mqtt_err.rc in [4, 5]:
-                        _LOGGER.error(
-                            "[%s] token expired or invalid, acquire new one.",
-                            self._endpoint,
-                        )
-                        await self._auth_mgr.check_and_refresh_token()
+                # validate token before reconnecting
+                await self._auth_mgr.check_and_refresh_token()
             except Exception:
-                _LOGGER.error("[%s] unexcept exception:", self._endpoint, exc_info=True)
+                _LOGGER.error(
+                    "[%s] unexcept exception:", self._endpoint.name, exc_info=True
+                )
 
     async def disconnect(self) -> None:
         """UnRegister listener"""
@@ -116,12 +126,12 @@ class YoLinkMqttClient:
                     "waterReport",  # Sprinkler
                 ]:
                     return
-                device = self._home_devices.get(device_id)
+                device = self._devices.get(device_id)
                 if device is None:
                     return
                 paired_device_id = device.get_paired_device_id()
                 if paired_device_id is not None:
-                    paired_device = self._home_devices.get(paired_device_id)
+                    paired_device = self._devices.get(paired_device_id)
                     if paired_device is None:
                         return
                     # post current device state to paired device
@@ -137,4 +147,5 @@ class YoLinkMqttClient:
     ) -> None:
         """Resolve device message."""
         resolve_sub_message(device, msg_data, msg_type)
-        self._message_listener.on_message(device, msg_data)
+        if self._message_listener is not None:
+            self._message_listener.on_message(device, msg_data)
