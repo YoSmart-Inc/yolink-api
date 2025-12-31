@@ -45,25 +45,26 @@ class YoLinkMqttClient:
         self._message_listener = listener
         self._listener_task = asyncio.create_task(self._listen())
 
+    async def _check_and_refresh_token(self) -> tuple[str, str]:
+        """Check and refresh token."""
+        new_token = await self._auth_mgr.check_and_refresh_token()
+        if isinstance(self._auth_mgr, YoLinkLocalAuthMgr):
+            return self._auth_mgr._client_id, new_token
+        else:
+            return new_token, ""
+
     async def _listen(self):
-        # check and fresh access token
-        await self._auth_mgr.check_and_refresh_token()
+        """Listen to yolink mqtt broker."""
         reconnect_interval = 30
         self._running = True
-        _username = ""
-        _password = ""
-        if isinstance(self._auth_mgr, YoLinkLocalAuthMgr):
-            _password = self._auth_mgr._client_secret
-            _username = self._auth_mgr._client_id
-        else:
-            _username = self._auth_mgr.access_token()
         while self._running:
             try:
+                username, password = await self._check_and_refresh_token()
                 async with Client(
                     hostname=self._broker_host,
                     port=self._broker_port,
-                    username=_username,
-                    password=_password,
+                    username=username,
+                    password=password,
                     keepalive=60,
                     protocol=ProtocolVersion.V311,
                 ) as client:
@@ -84,12 +85,11 @@ class YoLinkMqttClient:
                     exc_info=True,
                 )
                 await asyncio.sleep(reconnect_interval)
-                # validate token before reconnecting
-                await self._auth_mgr.check_and_refresh_token()
             except Exception:
                 _LOGGER.error(
                     "[%s] unexcept exception:", self._endpoint.name, exc_info=True
                 )
+                await asyncio.sleep(reconnect_interval)
 
     async def disconnect(self) -> None:
         """UnRegister listener"""
