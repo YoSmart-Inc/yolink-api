@@ -379,3 +379,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 - [Source Code](https://github.com/YoSmart-Inc/yolink-api)
 - [Bug Tracker](https://github.com/YoSmart-Inc/yolink-api/issues)
 - [YoLink Official Site](https://www.yolink.com)
+- YS7914-UC (Leak Sensor)

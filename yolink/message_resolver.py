@@ -57,7 +57,7 @@ def water_depth_sensor_message_resolve(
 
 
 def water_meter_controller_message_resolve(
-    msg_data: dict[str, Any], device_model: str
+    msg_data: dict[str, Any], device_model: str | None
 ) -> None:
     """WaterMeterController message resolve."""
     if msg_data is not None and ((meter_state := msg_data.get("state")) is not None):
@@ -67,7 +67,7 @@ def water_meter_controller_message_resolve(
         if meter_value is not None:
             meter_unit = UnitOfVolume.GALLONS
             if (meter_attrs := msg_data.get("attributes")) is not None:
-                if device_model.startswith("YS5009"):
+                if device_model is not None and device_model.startswith("YS5009"):
                     meter_step_factor = (
                         1 / (_meter_step_factor / (1000 * 100))
                         if (_meter_step_factor := meter_attrs.get("meterStepFactor"))
@@ -102,7 +102,7 @@ def water_meter_controller_message_resolve(
 
 def multi_water_meter_controller_message_resolve(
     msg_data: dict[str, Any],
-    device_model: str,
+    device_model: str | None,
 ) -> None:
     """MultiWaterMeterController message resolve."""
     if msg_data is not None and ((meter_state := msg_data.get("state")) is not None):
@@ -111,7 +111,7 @@ def multi_water_meter_controller_message_resolve(
         if meter_reading_values is not None:
             meter_unit = UnitOfVolume.GALLONS
             if (meter_attrs := msg_data.get("attributes")) is not None:
-                if device_model.startswith("YS5029"):
+                if device_model is not None and device_model.startswith("YS5029"):
                     meter_step_factor = (
                         1 / (_meter_step_factor / (1000 * 100))
                         if (_meter_step_factor := meter_attrs.get("meterStepFactor"))

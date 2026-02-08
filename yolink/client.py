@@ -18,12 +18,17 @@ class YoLinkClient:
         self._auth_mgr = auth_mgr
 
     async def request(
-        self, method: str, url: str, auth_required: bool = True, **kwargs: Any
+        self,
+        method: str,
+        url: str,
+        auth_required: bool = True,
+        **kwargs: Any,
     ) -> ClientResponse:
         """Proxy Request and add Auth/CV headers."""
         headers = kwargs.pop("headers", {})
         params = kwargs.pop("params", None)
         data = kwargs.pop("data", None)
+        timeout = kwargs.pop("timeout", 8)
 
         # Extra, user supplied values
         extra_headers = kwargs.pop("extra_headers", None)
@@ -46,7 +51,13 @@ class YoLinkClient:
             data = data or {}
             data.update(extra_data)
         return await self._auth_mgr.client_session().request(
-            method, url, **kwargs, headers=headers, params=params, data=data, timeout=8
+            method,
+            url,
+            **kwargs,
+            headers=headers,
+            params=params,
+            data=data,
+            timeout=timeout,
         )
 
     async def get(self, url: str, **kwargs: Any) -> ClientResponse:
