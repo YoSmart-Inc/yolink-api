@@ -228,15 +228,15 @@ async def listen_for_events(auth_mgr: SimpleAuthManager, home_id: str):
 
 This library supports a wide range of YoLink devices including:
 
-| Category | Device Types |
-|----------|--------------|
-| **Hubs** | Hub (YS1603-UC), SpeakerHub (YS1604-UC) |
-| **Sensors** | Door Sensor, Motion Sensor, Water Leak Sensor, Temperature/Humidity Sensor, Vibration Sensor, CO/Smoke Alarm, Soil Sensor |
-| **Switches & Outlets** | In-Wall Switch, Outlet, Multi-Outlet, Smart Plug, Power Strip |
-| **Controllers** | Thermostat, Garage Door Controller, Water Valve, Sprinkler Controller |
-| **Locks** | Smart Lock M1, Smart Lock M2 |
-| **Remotes** | KeyFob, On/Off Fob, DimmerFob, SirenFob, FlexFob |
-| **Alarms** | Siren Alarm, Outdoor Alarm, Power Fail Alarm |
+| Category               | Device Types                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Hubs**               | Hub (YS1603-UC), SpeakerHub (YS1604-UC)                                                                                   |
+| **Sensors**            | Door Sensor, Motion Sensor, Water Leak Sensor, Temperature/Humidity Sensor, Vibration Sensor, CO/Smoke Alarm, Soil Sensor |
+| **Switches & Outlets** | In-Wall Switch, Outlet, Multi-Outlet, Smart Plug, Power Strip                                                             |
+| **Controllers**        | Thermostat, Garage Door Controller, Water Valve, Sprinkler Controller                                                     |
+| **Locks**              | Smart Lock M1, Smart Lock M2                                                                                              |
+| **Remotes**            | KeyFob, On/Off Fob, DimmerFob, SirenFob, FlexFob                                                                          |
+| **Alarms**             | Siren Alarm, Outdoor Alarm, Power Fail Alarm                                                                              |
 
 See the [full device list](#device-models) below for specific model numbers.
 
@@ -378,5 +378,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Source Code](https://github.com/YoSmart-Inc/yolink-api)
 - [Bug Tracker](https://github.com/YoSmart-Inc/yolink-api/issues)
-- [YoLink Official Site](https://www.yolink.com)
-- YS7914-UC (Leak Sensor)
+- [YoLink Official Site](https://www.yosmart.com)
