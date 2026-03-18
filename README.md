@@ -339,6 +339,7 @@ High-level manager for your YoLink home (used for Home Assistant integration):
 - YS4102-UC (Smart Sprinkler Controller)
 - YS4103-UC (Smart Sprinkler Controller V2)
 - YS7A12-UC (Smoke Alarm)
+- YS7A06-UC (Smart CO Alarm)
 
 </details>
 
