@@ -5,8 +5,9 @@ import time
 
 from asyncio import Lock
 from .auth_mgr import YoLinkAuthMgr
-from aiohttp import ClientSession, ClientError
+from aiohttp import ClientSession, ClientError, ClientTimeout
 from json import JSONDecodeError
+from asyncio import TimeoutError
 
 
 from typing import cast
@@ -52,10 +53,13 @@ class YoLinkLocalAuthMgr(YoLinkAuthMgr):
         async with self._token_lock:
             if self.valid_token:
                 return self.access_token()
-            new_token = await self._token_request()
-            new_token["expires_at"] = time.time() + new_token["expires_in"]
-            self._token = new_token
-            return self.access_token()
+            try:
+                new_token = await self._token_request()
+                new_token["expires_at"] = time.time() + new_token["expires_in"]
+                self._token = new_token
+                return self.access_token()
+            except TimeoutError as err:
+                raise ClientError("Token request timed out") from err
 
     async def _token_request(self) -> dict:
         """Make a token request."""
@@ -68,6 +72,7 @@ class YoLinkLocalAuthMgr(YoLinkAuthMgr):
                 "client_id": self._client_id,
                 "client_secret": self._client_secret,
             },
+            timeout=ClientTimeout(total=10),
         )
         if resp.status >= 400:
             try:
