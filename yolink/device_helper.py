@@ -111,3 +111,5 @@ def get_keepalive_time(device_type: str, device_model: str) -> int:
         return CLASS_C_KEEPALIVE_TIME
     if device_class_mode == "Hub":
         return HUB_KEEPALIVE_TIME
+    #  fall back to 9 hours for unknown devices
+    return CLASS_AD_KEEPALIVE_TIME

@@ -3,7 +3,6 @@
 from __future__ import annotations
 import abc
 from typing import Optional, Any
-from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field, field_validator
 from tenacity import RetryError
@@ -19,12 +18,12 @@ from .const import (
     ATTR_DEVICE_MODEL_NAME,
     ATTR_DEVICE_PARENT_ID,
     ATTR_DEVICE_SERVICE_ZONE,
+    ATTR_DEVICE_APP_EUI,
     DEVICE_MODELS_SUPPORT_MODE_SWITCHING,
 )
 from .client_request import ClientRequest
 from .message_resolver import resolve_message
 from .device_helper import get_net_type, get_keepalive_time
-from time import time
 
 
 class YoLinkDeviceMode(BaseModel):
@@ -39,6 +38,7 @@ class YoLinkDeviceMode(BaseModel):
     device_service_zone: Optional[str] = Field(
         alias=ATTR_DEVICE_SERVICE_ZONE, default=None
     )
+    device_app_eui: Optional[str] = Field(alias=ATTR_DEVICE_APP_EUI, default=None)
 
     @field_validator("device_parent_id")
     @classmethod
@@ -61,13 +61,15 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         self.device_attrs: dict | None = None
         self.parent_id: str = device.device_parent_id
         self._client: YoLinkClient = client
-
+        self.device_app_eui: str | None = device.device_app_eui
         self._state: dict | None = {}
         self.device_model: str = (
             device.device_model_name.split("-")[0]
             if device.device_model_name is not None
             else ""
         )
+        if not self.device_model and self.device_app_eui is not None:
+            self.device_model = f"YS{self.device_app_eui[6:10]}"
         if device.device_service_zone is not None:
             self.device_endpoint: Endpoint = (
                 Endpoints.EU.value
@@ -150,21 +152,7 @@ class YoLinkDevice(metaclass=abc.ABCMeta):
         """Check if the device supports mode switching."""
         return self.device_model_name in DEVICE_MODELS_SUPPORT_MODE_SWITCHING
 
-    def is_online(self, data: dict[str, Any]) -> bool:
-        """Check if the device is online.
-        Not for Hub devices.
-        """
-        if data is None:
-            return False
-        if self.is_hub and data.get("online") is not None:
-            return data.get("online")
-        last_report_at: Optional[int] = data.get("reportAt")
-        if last_report_at is None:
-            return False
-        keepalive_time = get_keepalive_time(self)
-        if keepalive_time <= 0:
-            return False
-        last_report_at_ts = datetime.strptime(
-            last_report_at, "%Y-%m-%dT%H:%M:%S.%fZ"
-        ).replace(tzinfo=timezone.utc)
-        return (int(time.time()) - last_report_at_ts) <= keepalive_time
+    @property
+    def keepalive_time(self) -> int:
+        """Get device keepalive time in seconds."""
+        return get_keepalive_time(self.device_type, self.device_model)
