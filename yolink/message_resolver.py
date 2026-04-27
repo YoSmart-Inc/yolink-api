@@ -15,6 +15,7 @@ from .const import (
     ATTR_DEVICE_SOIL_TH_SENSOR,
     ATTR_DEVICE_SPRINKLER,
     ATTR_DEVICE_SPRINKLER_V2,
+    ATTR_DEVICE_TH_SENSOR,
 )
 
 if TYPE_CHECKING:
@@ -202,6 +203,28 @@ def sprinkler_v2_message_resolve(
         msg_data["valve"] = state.get("running")
 
 
+def th_sensor_message_resolve(
+    msg_data: dict[str, Any],
+) -> None:
+    """Temperature and humidity sensor message resolve."""
+    if (
+        msg_data is not None
+        and (records := msg_data.get("records")) is not None
+        and len(records) > 0
+    ):
+        sorted_records = sorted(records, key=lambda x: x.get("time", 0), reverse=True)
+        msg_data["temperature"] = (
+            temperature
+            if (temperature := sorted_records[0].get("temperature")) is not None
+            else None
+        )
+        msg_data["humidity"] = (
+            humidity
+            if (humidity := sorted_records[0].get("humidity")) is not None
+            else None
+        )
+
+
 def resolve_message(
     device: YoLinkDevice, msg_data: dict[str, Any], msg_type: str | None
 ) -> None:
@@ -218,6 +241,8 @@ def resolve_message(
         sprinkler_message_resolve(device, msg_data, msg_type)
     elif device.device_type == ATTR_DEVICE_SPRINKLER_V2:
         sprinkler_v2_message_resolve(msg_data)
+    elif device.device_type == ATTR_DEVICE_TH_SENSOR:
+        th_sensor_message_resolve(msg_data)
 
 
 def resolve_sub_message(

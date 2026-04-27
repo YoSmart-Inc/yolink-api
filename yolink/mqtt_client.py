@@ -99,6 +99,26 @@ class YoLinkMqttClient:
         self._listener_task = None
         self._running = False
 
+    def _is_message_acceptable(self, eventType: str | None) -> bool:
+        """Check if the message is acceptable."""
+        if eventType is None:
+            return False
+        if eventType == "THSensor.DataRecord":
+            return True
+        eventTypeList = [
+            "Report",
+            "Alert",
+            "StatusChange",
+            "getState",
+            "setState",
+            "DevEvent",
+            "waterReport",  # Sprinkler
+        ]
+        for event in eventTypeList:
+            if eventType.endswith(event):
+                return True
+        return False
+
     def _process_message(self, msg) -> None:
         """Mqtt on message."""
         _LOGGER.debug(
@@ -112,20 +132,10 @@ class YoLinkMqttClient:
             try:
                 device_id = keys[2]
                 msg_data = BRDP.parse_raw(msg.payload.decode("UTF-8"))
-                if msg_data.event is None:
+                if not self._is_message_acceptable(msg_data.event):
                     return
                 msg_event = msg_data.event.split(".")
                 msg_type = msg_event[len(msg_event) - 1]
-                if msg_type not in [
-                    "Report",
-                    "Alert",
-                    "StatusChange",
-                    "getState",
-                    "setState",
-                    "DevEvent",
-                    "waterReport",  # Sprinkler
-                ]:
-                    return
                 device = self._devices.get(device_id)
                 if device is None:
                     return
