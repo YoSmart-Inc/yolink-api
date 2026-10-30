@@ -1,8 +1,6 @@
 """Thermostat request builder"""
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 from .client_request import ClientRequest
@@ -11,11 +9,11 @@ from .client_request import ClientRequest
 class ThermostatState(BaseModel):
     """Thermostat State."""
 
-    lowTemp: Optional[float] = None
-    highTemp: Optional[float] = None
-    mode: Optional[str] = None
-    fan: Optional[str] = None
-    sche: Optional[str] = None
+    lowTemp: float | None = None
+    highTemp: float | None = None
+    mode: str | None = None
+    fan: str | None = None
+    sche: str | None = None
 
 
 class ThermostatRequestBuilder:  # pylint: disable=too-few-public-methods

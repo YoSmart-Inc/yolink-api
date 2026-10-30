@@ -10,7 +10,7 @@ license-files = ["LICENSE"]
 description = "A library to authenticate with yolink device"
 readme = "README.md"
 authors = [{ name = "YoSmart" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",

@@ -1,6 +1,6 @@
 """YoLink Basic Model."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -15,11 +15,11 @@ from .exception import (
 class BRDP(BaseModel):
     """BRDP of YoLink API."""
 
-    code: Optional[str] = None
-    desc: Optional[str] = None
-    method: Optional[str] = None
-    data: Dict[str, Any] = None
-    event: Optional[str] = None
+    code: str | None = None
+    desc: str | None = None
+    method: str | None = None
+    data: dict[str, Any] = None
+    event: str | None = None
 
     def check_response(self):
         """Check API Response."""
@@ -36,7 +36,7 @@ class BRDP(BaseModel):
 class BSDPHelper:
     """YoLink API -> BSDP Builder."""
 
-    _bsdp: Dict
+    _bsdp: dict
 
     def __init__(self, device_id: str, device_token: str, method: str):
         """Constanst."""
@@ -45,11 +45,11 @@ class BSDPHelper:
             self._bsdp["targetDevice"] = device_id
             self._bsdp["token"] = device_token
 
-    def add_params(self, params: Dict):
+    def add_params(self, params: dict):
         """Build params of BSDP."""
         self._bsdp["params"].update(params)
         return self
 
-    def build(self) -> Dict:
+    def build(self) -> dict:
         """Generate BSDP."""
         return self._bsdp

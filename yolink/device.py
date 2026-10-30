@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 from tenacity import RetryError
@@ -35,15 +35,15 @@ class YoLinkDeviceMode(BaseModel):
     device_token: str = Field(alias=ATTR_DEVICE_TOKEN)
     device_type: str = Field(alias=ATTR_DEVICE_TYPE)
     device_model_name: str = Field(alias=ATTR_DEVICE_MODEL_NAME, default=None)
-    device_parent_id: Optional[str] = Field(alias=ATTR_DEVICE_PARENT_ID, default=None)
-    device_service_zone: Optional[str] = Field(
+    device_parent_id: str | None = Field(alias=ATTR_DEVICE_PARENT_ID, default=None)
+    device_service_zone: str | None = Field(
         alias=ATTR_DEVICE_SERVICE_ZONE, default=None
     )
-    device_app_eui: Optional[str] = Field(alias=ATTR_DEVICE_APP_EUI, default=None)
+    device_app_eui: str | None = Field(alias=ATTR_DEVICE_APP_EUI, default=None)
 
     @field_validator("device_parent_id")
     @classmethod
-    def check_parent_id(cls, val: Optional[str]) -> Optional[str]:
+    def check_parent_id(cls, val: str | None) -> str | None:
         """Checking and replace parent id."""
         if val == "null":
             val = None

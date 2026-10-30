@@ -1,6 +1,6 @@
 """YoLink client."""
 
-from typing import Any, Dict
+from typing import Any
 
 from aiohttp import ClientError, ClientResponse
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
@@ -72,7 +72,7 @@ class YoLinkClient:
         retry=retry_if_exception_type(YoLinkDeviceConnectionFailed),
         stop=stop_after_attempt(2),
     )
-    async def execute(self, url: str, bsdp: Dict, **kwargs: Any) -> BRDP:
+    async def execute(self, url: str, bsdp: dict, **kwargs: Any) -> BRDP:
         """Call YoLink Api"""
         try:
             yl_resp = await self.post(url, json=bsdp, **kwargs)
