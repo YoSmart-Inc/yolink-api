@@ -1,12 +1,13 @@
 """YoLink Unit convert helper."""
 
 from __future__ import annotations
-from collections.abc import Callable
-from functools import lru_cache
-from enum import IntEnum
 
-from .exception import YoLinkError
+from collections.abc import Callable
+from enum import IntEnum
+from functools import lru_cache
+
 from .const import UNIT_NOT_RECOGNIZED_TEMPLATE
+from .exception import YoLinkError
 
 
 class UnitOfVolume(IntEnum):

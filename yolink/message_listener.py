@@ -1,6 +1,8 @@
 """YoLink  cloud message listener."""
+
 from abc import ABCMeta, abstractmethod
 from typing import Any
+
 from .device import YoLinkDevice
 
 

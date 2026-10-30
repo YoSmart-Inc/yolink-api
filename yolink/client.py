@@ -3,7 +3,7 @@
 from typing import Any, Dict
 
 from aiohttp import ClientError, ClientResponse
-from tenacity import retry, stop_after_attempt, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 from .auth_mgr import YoLinkAuthMgr
 from .exception import YoLinkClientError, YoLinkDeviceConnectionFailed

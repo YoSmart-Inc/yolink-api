@@ -2,15 +2,13 @@
 
 import logging
 import time
-
-from asyncio import Lock
-from .auth_mgr import YoLinkAuthMgr
-from aiohttp import ClientSession, ClientError, ClientTimeout
+from asyncio import Lock, TimeoutError
 from json import JSONDecodeError
-from asyncio import TimeoutError
-
-
 from typing import cast
+
+from aiohttp import ClientError, ClientSession, ClientTimeout
+
+from .auth_mgr import YoLinkAuthMgr
 
 _LOGGER = logging.getLogger(__name__)
 

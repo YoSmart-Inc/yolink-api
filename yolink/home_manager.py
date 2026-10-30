@@ -1,17 +1,19 @@
 """YoLink home manager."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any
+
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
 from .const import ATTR_DEVICE_WATER_DEPTH_SENSOR
 from .device import YoLinkDevice, YoLinkDeviceMode
+from .endpoint import Endpoint, Endpoints
 from .exception import YoLinkClientError, YoLinkUnSupportedMethodError
 from .message_listener import MessageListener
 from .model import BRDP
 from .mqtt_client import YoLinkMqttClient
-from .endpoint import Endpoint, Endpoints
 
 _LOGGER = logging.getLogger(__name__)
 

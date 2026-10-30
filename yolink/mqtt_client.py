@@ -9,11 +9,11 @@ from pydantic import ValidationError
 
 from .auth_mgr import YoLinkAuthMgr
 from .device import YoLinkDevice
-from .message_listener import MessageListener
-from .model import BRDP
-from .message_resolver import resolve_sub_message
 from .endpoint import Endpoint
 from .local_auth_mgr import YoLinkLocalAuthMgr
+from .message_listener import MessageListener
+from .message_resolver import resolve_sub_message
+from .model import BRDP
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,29 +1,30 @@
 """YoLink Device."""
 
 from __future__ import annotations
+
 import abc
-from typing import Optional, Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
 from tenacity import RetryError
 
 from .client import YoLinkClient
-from .endpoint import Endpoint, Endpoints
-from .model import BRDP, BSDPHelper
+from .client_request import ClientRequest
 from .const import (
+    ATTR_DEVICE_APP_EUI,
     ATTR_DEVICE_ID,
-    ATTR_DEVICE_NAME,
-    ATTR_DEVICE_TOKEN,
-    ATTR_DEVICE_TYPE,
     ATTR_DEVICE_MODEL_NAME,
+    ATTR_DEVICE_NAME,
     ATTR_DEVICE_PARENT_ID,
     ATTR_DEVICE_SERVICE_ZONE,
-    ATTR_DEVICE_APP_EUI,
+    ATTR_DEVICE_TOKEN,
+    ATTR_DEVICE_TYPE,
     DEVICE_MODELS_SUPPORT_MODE_SWITCHING,
 )
-from .client_request import ClientRequest
+from .device_helper import get_keepalive_time, get_net_type
+from .endpoint import Endpoint, Endpoints
 from .message_resolver import resolve_message
-from .device_helper import get_net_type, get_keepalive_time
+from .model import BRDP, BSDPHelper
 
 
 class YoLinkDeviceMode(BaseModel):
