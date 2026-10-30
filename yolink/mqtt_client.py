@@ -77,18 +77,22 @@ class YoLinkMqttClient:
                             "[%s] yolink mqtt client connected.", self._endpoint.name
                         )
                     async for message in client.messages:
-                        self._process_message(message)
+                        try:
+                            self._process_message(message)
+                        except Exception:
+                            _LOGGER.exception(
+                                "[%s] failed to process MQTT message on %s",
+                                self._endpoint.name,
+                                message.topic,
+                            )
             except MqttError:
-                _LOGGER.error(
+                _LOGGER.exception(
                     "[%s] yolink mqtt client disconnected!",
                     self._endpoint.name,
-                    exc_info=True,
                 )
                 await asyncio.sleep(reconnect_interval)
             except Exception:
-                _LOGGER.error(
-                    "[%s] unexcept exception:", self._endpoint.name, exc_info=True
-                )
+                _LOGGER.exception("[%s] unexpected exception:", self._endpoint.name)
                 await asyncio.sleep(reconnect_interval)
 
     async def disconnect(self) -> None:
