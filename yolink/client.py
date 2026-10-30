@@ -84,6 +84,4 @@ class YoLinkClient:
             raise YoLinkClientError(
                 "-1003", "yolink client request failed!"
             ) from client_err
-        except YoLinkClientError as yl_client_err:
-            raise yl_client_err
         return brdp

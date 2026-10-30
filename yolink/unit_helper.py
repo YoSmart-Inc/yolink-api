@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from enum import IntEnum
 from functools import lru_cache
+from typing import ClassVar
 
 from .const import UNIT_NOT_RECOGNIZED_TEMPLATE
 from .exception import YoLinkError
@@ -90,13 +91,13 @@ class VolumeConverter(BaseUnitConverter):
     UNIT_CLASS = "volume"
     NORMALIZED_UNIT = UnitOfVolume.CUBIC_METERS
     # Units in terms of m³
-    _UNIT_CONVERSION: dict[str | None, float] = {
+    _UNIT_CONVERSION: ClassVar[dict[str | None, float]] = {
         UnitOfVolume.LITERS: 1 / _L_TO_CUBIC_METER,
         UnitOfVolume.GALLONS: 1 / _GALLON_TO_CUBIC_METER,
         UnitOfVolume.CUBIC_METERS: 1,
         UnitOfVolume.CENTUM_CUBIC_FEET: 1 / (100 * _CUBIC_FOOT_TO_CUBIC_METER),
     }
-    VALID_UNITS = {
+    VALID_UNITS: ClassVar[set[UnitOfVolume]] = {
         UnitOfVolume.LITERS,
         UnitOfVolume.GALLONS,
         UnitOfVolume.CUBIC_METERS,

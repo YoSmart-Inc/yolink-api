@@ -101,6 +101,7 @@ class YoLinkLocalHubClient:
         response: BRDP = await self._http_client.execute(
             self._endpoint.url, bsdp={"method": "Home.getDeviceList"}, **kwargs
         )
+        loaded_devices: dict[str, YoLinkDevice] = {}
         for device_data in response.data["devices"]:
             device = YoLinkDevice(YoLinkDeviceMode(**device_data), self._http_client)
             device.device_endpoint = self._endpoint
@@ -113,7 +114,10 @@ class YoLinkLocalHubClient:
                         "getExternalData is not supported for: %s",
                         device.device_type,
                     )
-            self._devices[device.device_id] = device
+            loaded_devices[device.device_id] = device
+        for device_id in self._devices.keys() - loaded_devices.keys():
+            del self._devices[device_id]
+        self._devices.update(loaded_devices)
         return self._devices
 
     def get_devices(self) -> list[YoLinkDevice]:

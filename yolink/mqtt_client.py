@@ -41,6 +41,13 @@ class YoLinkMqttClient:
 
     async def connect(self, topic: str, listener: MessageListener) -> None:
         """Connect to yolink mqtt broker."""
+        if self._listener_task is not None and not self._listener_task.done():
+            if topic != self._topic or listener is not self._message_listener:
+                _LOGGER.warning(
+                    "[%s] MQTT client is already running; new settings were ignored",
+                    self._endpoint.name,
+                )
+            return
         self._topic = topic
         self._message_listener = listener
         self._listener_task = asyncio.create_task(self._listen())
@@ -99,9 +106,16 @@ class YoLinkMqttClient:
         """UnRegister listener"""
         if self._listener_task is None:
             return
-        self._listener_task.cancel()
-        self._listener_task = None
+        task = self._listener_task
         self._running = False
+        task.cancel()
+        try:
+            await asyncio.wait({task})
+            if not task.cancelled():
+                task.result()
+        finally:
+            if task.done() and self._listener_task is task:
+                self._listener_task = None
 
     def _is_message_acceptable(self, eventType: str | None) -> bool:
         """Check if the message is acceptable."""

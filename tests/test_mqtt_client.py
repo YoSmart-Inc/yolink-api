@@ -10,6 +10,73 @@ from yolink.mqtt_client import YoLinkMqttClient
 
 
 class MqttMessageHandlingTest(unittest.IsolatedAsyncioTestCase):
+    async def test_disconnect_propagates_caller_cancellation_during_cleanup(self):
+        started = asyncio.Event()
+        cleanup_started = asyncio.Event()
+        finish_cleanup = asyncio.Event()
+
+        async def listen():
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cleanup_started.set()
+                await finish_cleanup.wait()
+
+        client = YoLinkMqttClient(None, Endpoints.US.value, "localhost", 1883, {})
+        with patch.object(client, "_listen", side_effect=listen):
+            await client.connect("topic", object())
+            listener_task = client._listener_task
+            await started.wait()
+            disconnect_task = asyncio.create_task(client.disconnect())
+            await cleanup_started.wait()
+            disconnect_task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await disconnect_task
+            self.assertIs(client._listener_task, listener_task)
+            self.assertFalse(listener_task.done())
+            finish_cleanup.set()
+            with self.assertRaises(asyncio.CancelledError):
+                await listener_task
+            await client.disconnect()
+            self.assertIsNone(client._listener_task)
+
+    async def test_connect_is_idempotent_and_disconnect_waits_for_cleanup(self):
+        started = asyncio.Event()
+        cleaned_up = asyncio.Event()
+        starts = 0
+
+        async def listen():
+            nonlocal starts
+            starts += 1
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                await asyncio.sleep(0)
+                cleaned_up.set()
+
+        client = YoLinkMqttClient(None, Endpoints.US.value, "localhost", 1883, {})
+        listener = object()
+        with patch.object(client, "_listen", side_effect=listen):
+            await client.connect("topic", listener)
+            await started.wait()
+            task = client._listener_task
+            await client.connect("topic", listener)
+            self.assertIs(client._listener_task, task)
+            self.assertEqual(starts, 1)
+            with self.assertLogs("yolink.mqtt_client", level="WARNING"):
+                await client.connect("another-topic", listener)
+            self.assertIs(client._listener_task, task)
+            self.assertEqual(client._topic, "topic")
+            await client.disconnect()
+            self.assertTrue(cleaned_up.is_set())
+            self.assertTrue(task.done())
+            self.assertIsNone(client._listener_task)
+            await client.connect("another-topic", listener)
+            self.assertIsNot(client._listener_task, task)
+            await client.disconnect()
+
     async def test_bad_message_and_listener_error_do_not_interrupt_subscription(self):
         received = asyncio.Event()
         calls = []
