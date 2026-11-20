@@ -8,6 +8,7 @@ from decimal import Decimal, ROUND_DOWN
 
 from .unit_helper import UnitOfVolume, VolumeConverter
 from .const import (
+    ATTR_DEVICE_MODEL_ON_OFF_FOB_YS3605,
     ATTR_DEVICE_SMART_REMOTER,
     ATTR_DEVICE_WATER_DEPTH_SENSOR,
     ATTR_DEVICE_WATER_METER_CONTROLLER,
@@ -22,7 +23,9 @@ if TYPE_CHECKING:
     from .device import YoLinkDevice
 
 
-def smart_remoter_message_resolve(msg_data: dict[str, Any], event_type: str) -> None:
+def smart_remoter_message_resolve(
+    msg_data: dict[str, Any], event_type: str, device_model: str | None = None
+) -> None:
     """SmartRemoter message resolve."""
     if msg_data is not None:
         btn_press_event = msg_data.get("event")
@@ -32,6 +35,18 @@ def smart_remoter_message_resolve(msg_data: dict[str, Any], event_type: str) -> 
             else:
                 key_mask = btn_press_event["keyMask"]
                 button_sequence = 0 if key_mask == 0 else (int(log2(key_mask)) + 1)
+                if (
+                    device_model == ATTR_DEVICE_MODEL_ON_OFF_FOB_YS3605
+                    and button_sequence > 0
+                ):
+                    # The On/Off Fob has an on key and an off key per channel (A, B)
+                    # but reports both keys of a channel with the same keyMask: on as
+                    # "Press", off as "LongPress". It has no real long press (holding
+                    # a key starts garage door opener pairing). Report each key as its
+                    # own button: A on = 1, A off = 2, B on = 3, B off = 4.
+                    is_off = btn_press_event.get("type") == "LongPress"
+                    button_sequence = (button_sequence - 1) * 2 + (2 if is_off else 1)
+                    msg_data["event"]["type"] = "Press"
                 # replace with button sequence
                 msg_data["event"]["keyMask"] = button_sequence
 
@@ -250,6 +265,6 @@ def resolve_sub_message(
 ) -> None:
     """Resolve device pushing message."""
     if device.device_type == ATTR_DEVICE_SMART_REMOTER:
-        smart_remoter_message_resolve(msg_data, msg_type)
+        smart_remoter_message_resolve(msg_data, msg_type, device.device_model)
     else:
         resolve_message(device, msg_data, msg_type)
