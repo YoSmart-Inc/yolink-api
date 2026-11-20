@@ -54,6 +54,7 @@ yolink-api/
 │   ├── mqtt_client.py          # MQTT client for real-time events
 │   ├── outlet_request_builder.py    # Builder for outlet/switch commands
 │   ├── thermostat_request_builder.py # Builder for thermostat commands
+│   ├── uac_auth_mgr.py         # Authentication manager for User Access Credentials
 │   └── unit_helper.py          # Unit conversion utilities
 ├── pyproject.toml              # Project metadata and dependencies
 └── README.md
@@ -95,52 +96,12 @@ python examples/02_enumerate_devices.py
 
 ```python
 import asyncio
-from datetime import datetime, timedelta, timezone
 
 import aiohttp
 
-from yolink.auth_mgr import YoLinkAuthMgr
 from yolink.client import YoLinkClient
-from yolink.const import OAUTH2_TOKEN
 from yolink.endpoint import Endpoints
-
-
-class SimpleAuthManager(YoLinkAuthMgr):
-    """Simple auth manager implementation."""
-    
-    def __init__(self, session: aiohttp.ClientSession, uaid: str, secret_key: str):
-        super().__init__(session)
-        self._uaid = uaid
-        self._secret_key = secret_key
-        self._access_token = None
-        self._token_expires_at = None
-    
-    def access_token(self) -> str:
-        return self._access_token or ""
-    
-    async def check_and_refresh_token(self) -> str:
-        if (
-            self._access_token is None
-            or self._token_expires_at is None
-            or datetime.now(timezone.utc) >= self._token_expires_at - timedelta(minutes=5)
-        ):
-            await self._fetch_token()
-        return self._access_token
-    
-    async def _fetch_token(self) -> None:
-        async with self._session.post(
-            OAUTH2_TOKEN,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": self._uaid,
-                "client_secret": self._secret_key,
-            },
-        ) as response:
-            response.raise_for_status()
-            data = await response.json()
-            self._access_token = data["access_token"]
-            expires_in = data.get("expires_in", 7200)
-            self._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
 
 async def main():
@@ -148,7 +109,7 @@ async def main():
     secret_key = "your_secret_key"
     
     async with aiohttp.ClientSession() as session:
-        auth_mgr = SimpleAuthManager(session, uaid, secret_key)
+        auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
         client = YoLinkClient(auth_mgr)
         
         # Authenticate
@@ -208,7 +169,7 @@ async def toggle_switch(device: YoLinkDevice, turn_on: bool):
 ```python
 import aiomqtt
 
-async def listen_for_events(auth_mgr: SimpleAuthManager, home_id: str):
+async def listen_for_events(auth_mgr: YoLinkUACAuthMgr, home_id: str):
     topic = f"yl-home/{home_id}/+/report"
     
     async with aiomqtt.Client(
@@ -248,6 +209,16 @@ The authentication manager handles OAuth2 token management. You must implement:
 
 - `access_token() -> str`: Return the current access token
 - `check_and_refresh_token() -> str`: Ensure token is valid, refresh if needed
+
+### YoLinkUACAuthMgr
+
+A ready-made `YoLinkAuthMgr` for User Access Credentials (UAID and Secret Key):
+
+- `YoLinkUACAuthMgr(session, uaid, secret_key)`: Create the manager with an `aiohttp.ClientSession`
+- `check_and_refresh_token() -> str`: Fetch the token on first use and refresh it at half of its lifetime. A failed refresh, other than refused credentials, keeps the cached token until it expires
+- `access_token() -> str | None`: Return the current token, or `None` before the first fetch
+
+It raises `YoLinkAuthFailError` when the credentials are refused and `YoLinkClientError` for any other failure (network error, timeout, malformed response).
 
 ### YoLinkClient
 
