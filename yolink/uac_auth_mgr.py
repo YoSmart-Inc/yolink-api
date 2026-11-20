@@ -82,6 +82,8 @@ class YoLinkUACAuthMgr(YoLinkAuthMgr):
             cached = self._token
             if cached is not None and time.time() < cached["refresh_at"]:
                 return cached["access_token"]
+            # From before the request, so response delay does not extend the lifetime.
+            requested_at = time.time()
             try:
                 token = await self._token_request()
             except YoLinkAuthFailError:
@@ -98,10 +100,9 @@ class YoLinkUACAuthMgr(YoLinkAuthMgr):
                     "Token refresh failed, keeping the cached token: %s", err.message
                 )
                 return cached["access_token"]
-            now = time.time()
             # Refresh at half the lifetime to leave room to retry a failing endpoint.
-            token["refresh_at"] = now + token["expires_in"] / 2
-            token["expires_at"] = now + token["expires_in"]
+            token["refresh_at"] = requested_at + token["expires_in"] / 2
+            token["expires_at"] = requested_at + token["expires_in"]
             self._token = token
             return token["access_token"]
 
