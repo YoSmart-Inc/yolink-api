@@ -35,10 +35,9 @@ import aiomqtt
 # Add parent directory to path to import yolink module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from yolink.client import YoLinkClient
 from yolink.endpoint import Endpoints
+from yolink.http_client import YoLinkHttpClient
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
-
 
 # Global flag for graceful shutdown
 running = True
@@ -73,7 +72,7 @@ async def main() -> None:
     # Create an aiohttp session and auth manager
     async with aiohttp.ClientSession() as session:
         auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
-        client = YoLinkClient(auth_mgr)
+        client = YoLinkHttpClient(auth_mgr)
 
         print("Connecting to YoLink API...")
         await auth_mgr.check_and_refresh_token()
@@ -82,8 +81,7 @@ async def main() -> None:
         # Step 1: Get home ID (required for MQTT topic subscription)
         print("Retrieving home information...")
         home_response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getGeneralInfo"}
+            url=Endpoints.US.value.url, bsdp={"method": "Home.getGeneralInfo"}
         )
         home_id = home_response.data.get("id")
         home_name = home_response.data.get("name", "Unknown")
@@ -92,8 +90,7 @@ async def main() -> None:
 
         # Step 2: Get device list for reference when events come in
         device_response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getDeviceList"}
+            url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}
         )
         devices = {
             d.get("deviceId"): d.get("name", "Unknown")
@@ -107,7 +104,9 @@ async def main() -> None:
         mqtt_topic = f"yl-home/{home_id}/+/report"
 
         print("Connecting to MQTT broker...")
-        print(f"  Broker: {Endpoints.US.value.mqtt_broker_host}:{Endpoints.US.value.mqtt_broker_port}")
+        print(
+            f"  Broker: {Endpoints.US.value.mqtt_broker_host}:{Endpoints.US.value.mqtt_broker_port}"
+        )
         print(f"  Topic: {mqtt_topic}")
         print()
 
@@ -136,7 +135,9 @@ async def main() -> None:
                         # Parse the topic to extract device ID
                         # Topic format: yl-home/{home_id}/{device_id}/report
                         topic_parts = str(message.topic).split("/")
-                        device_id = topic_parts[2] if len(topic_parts) >= 4 else "unknown"
+                        device_id = (
+                            topic_parts[2] if len(topic_parts) >= 4 else "unknown"
+                        )
                         device_name = devices.get(device_id, "Unknown Device")
 
                         # Parse the message payload
@@ -177,4 +178,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

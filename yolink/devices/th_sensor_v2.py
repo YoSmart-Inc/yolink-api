@@ -1,0 +1,16 @@
+"""YoLink device implementation."""
+
+from ..device import YoLinkDevice
+from ..device_feature import DeviceFeature
+from ..device_net_type import DeviceNetType
+
+
+class YoLinkTHSensorV2(YoLinkDevice):
+    """YoLink temperature and humidity sensor V2."""
+
+    _supports_battery = True
+    _supported_features = frozenset({DeviceFeature.TEMPERATURE})
+
+    def get_net_type(self) -> DeviceNetType:
+        """Return the device network class."""
+        return DeviceNetType.D if "YS8006" in self.model else DeviceNetType.A

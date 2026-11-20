@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import logging
-from asyncio import TimeoutError as AsyncTimeoutError
 from typing import Any
 
-from tenacity import RetryError
-
+from .abstract_client import YoLinkClinet
 from .auth_mgr import YoLinkAuthMgr
-from .client import YoLinkClient
 from .const import ATTR_DEVICE_WATER_DEPTH_SENSOR
 from .device import YoLinkDevice, YoLinkDeviceMode
+from .devices import create_device
 from .endpoint import Endpoint, Endpoints
-from .exception import YoLinkClientError, YoLinkUnSupportedMethodError
+from .exception import (
+    YoLinkApiCode,
+    YoLinkClientError,
+    YoLinkConfigError,
+    YoLinkError,
+)
+from .http_client import YoLinkHttpClient
 from .message_listener import MessageListener
 from .model import BRDP
 from .mqtt_client import YoLinkMqttClient
@@ -23,28 +27,25 @@ _LOGGER = logging.getLogger(__name__)
 has_external_data_devices = [ATTR_DEVICE_WATER_DEPTH_SENSOR]
 
 
-class YoLinkHome:
+class YoLinkCloudClinet(YoLinkClinet):
     """YoLink home manager."""
 
-    def __init__(self) -> None:
+    def __init__(self, auth_mgr: YoLinkAuthMgr) -> None:
         """Init YoLink Home Manager."""
+        if not auth_mgr:
+            raise YoLinkConfigError("setup failed, auth_mgr is required!")
+        self._auth_mgr = auth_mgr
         self._home_devices: dict[str, YoLinkDevice] = {}
-        self._http_client: YoLinkClient
+        self._http_client: YoLinkHttpClient
         self._endpoints: dict[str, Endpoint] = {}
         self._mqtt_clients: dict[str, YoLinkMqttClient] = {}
         self._message_listener: MessageListener
 
-    async def async_setup(
-        self, auth_mgr: YoLinkAuthMgr, listener: MessageListener
-    ) -> None:
+    async def async_setup(self, listener: MessageListener) -> None:
         """Init YoLink home."""
-        if not auth_mgr:
-            raise YoLinkClientError("-1001", "setup failed, auth_mgr is required!")
         if not listener:
-            raise YoLinkClientError(
-                "-1002", "setup failed, message listener is required!"
-            )
-        self._http_client = YoLinkClient(auth_mgr)
+            raise YoLinkConfigError("setup failed, message listener is required!")
+        self._http_client = YoLinkHttpClient(self._auth_mgr)
         home_info: BRDP = await self.async_get_home_info()
         # load home devices
         await self.async_load_home_devices()
@@ -53,7 +54,7 @@ class YoLinkHome:
         # setup yolink mqtt clients
         for endpoint in self._endpoints.values():
             endpoint_mqtt_client = YoLinkMqttClient(
-                auth_manager=auth_mgr,
+                auth_manager=self._auth_mgr,
                 endpoint=endpoint,
                 broker_host=endpoint.mqtt_broker_host,
                 broker_port=endpoint.mqtt_broker_port,
@@ -66,20 +67,14 @@ class YoLinkHome:
 
     async def async_unload(self) -> None:
         """Unload YoLink home."""
+        _LOGGER.info("Unloading YoLink home: mqtt_clients=%s", len(self._mqtt_clients))
         self._home_devices = {}
         self._http_client = None  # type: ignore
-        for endpoint, client in self._mqtt_clients.items():
-            _LOGGER.info(
-                "[%s] shutting down yolink mqtt client.",
-                endpoint,
-            )
+        for client in self._mqtt_clients.values():
             await client.disconnect()
-            _LOGGER.info(
-                "[%s] yolink mqtt client disconnected.",
-                endpoint,
-            )
         self._message_listener = None  # type: ignore
         self._mqtt_clients = {}
+        _LOGGER.info("YoLink home unloaded")
 
     async def async_get_home_info(self, **kwargs: Any) -> BRDP:
         """Get home general information."""
@@ -97,22 +92,28 @@ class YoLinkHome:
             **kwargs,
         )
         devices = [
-            YoLinkDevice(YoLinkDeviceMode(**device), self._http_client)
-            for device in response.data["devices"]
+            device
+            for device_data in response.data["devices"]
+            if (
+                device := create_device(
+                    YoLinkDeviceMode(**device_data), self._http_client
+                )
+            )
+            is not None
         ]
         await self._async_sync_eu_tokens(devices, **kwargs)
         loaded_devices: dict[str, YoLinkDevice] = {}
         for device in devices:
-            if device.device_type in has_external_data_devices:
+            if device.type in has_external_data_devices:
                 await self._async_load_external_data(device)
-            loaded_devices[device.device_id] = device
+            loaded_devices[device.id] = device
 
-        for device_id in self._home_devices.keys() - loaded_devices.keys():
-            del self._home_devices[device_id]
+        self._home_devices.clear()
         self._home_devices.update(loaded_devices)
         for device in devices:
-            self._endpoints[device.device_endpoint.name] = device.device_endpoint
+            self._endpoints[device.endpoint.name] = device.endpoint
 
+        _LOGGER.debug("Loaded home devices: count=%s", len(self._home_devices))
         return self._home_devices
 
     async def _async_sync_eu_tokens(
@@ -120,7 +121,7 @@ class YoLinkHome:
     ) -> None:
         """Synchronize EU tokens, retaining original tokens when unavailable."""
         eu_devices = [
-            device for device in devices if device.device_endpoint == Endpoints.EU.value
+            device for device in devices if device.endpoint == Endpoints.EU.value
         ]
         if not eu_devices:
             return
@@ -149,46 +150,50 @@ class YoLinkHome:
                     )
                     continue
                 tokens[device_id] = token
-        except (
-            YoLinkClientError,
-            TimeoutError,
-            AsyncTimeoutError,
-            RetryError,
-            KeyError,
-            TypeError,
-            ValueError,
-        ):
+        except (YoLinkError, KeyError, TypeError, ValueError) as err:
             _LOGGER.warning(
-                "Failed to sync EU device tokens; keeping existing tokens",
-                exc_info=True,
+                "Failed to sync EU device tokens; keeping existing tokens for %s devices: "
+                "error=%s code=%s",
+                len(eu_devices),
+                type(err).__name__,
+                getattr(err, "code", None),
             )
-            tokens = {}
+            return
 
         for device in eu_devices:
-            if token := tokens.get(device.device_id):
-                device.device_token = token
+            if token := tokens.get(device.id):
+                device.token = token
             else:
                 _LOGGER.warning(
                     "EU token unavailable for device %s; keeping its original token",
-                    device.device_id,
+                    device.id,
                 )
 
     async def _async_load_external_data(self, device: YoLinkDevice) -> None:
         """Load settings needed to interpret device data."""
         try:
             response = await device.get_external_data()
-            device.device_attrs = response.data.get("extData")
-        except YoLinkUnSupportedMethodError:
-            _LOGGER.debug(
-                "getExternalData is not supported for: %s", device.device_type
-            )
-        except (YoLinkClientError, TimeoutError, AsyncTimeoutError, RetryError):
-            if device.device_endpoint != Endpoints.EU.value:
+            device.attrs = response.data.get("extData")
+        except YoLinkError as err:
+            if (
+                isinstance(err, YoLinkClientError)
+                and err.code == YoLinkApiCode.UNSUPPORTED_METHOD
+            ):
+                _LOGGER.debug(
+                    "[%s] getExternalData is not supported: device=%s type=%s",
+                    device.endpoint.name,
+                    device.id,
+                    device.type,
+                )
+                return
+            if device.endpoint != Endpoints.EU.value:
                 raise
             _LOGGER.warning(
-                "Failed to load external data for EU device %s",
-                device.device_id,
-                exc_info=True,
+                "[EU] Failed to load external data: device=%s type=%s error=%s code=%s",
+                device.id,
+                device.type,
+                type(err).__name__,
+                getattr(err, "code", None),
             )
 
     def get_devices(self) -> list[YoLinkDevice]:

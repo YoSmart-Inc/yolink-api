@@ -24,8 +24,8 @@ import aiohttp
 # Add parent directory to path to import yolink module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from yolink.client import YoLinkClient
 from yolink.endpoint import Endpoints
+from yolink.http_client import YoLinkHttpClient
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
 
@@ -45,7 +45,7 @@ async def main() -> None:
     # Create an aiohttp session and auth manager
     async with aiohttp.ClientSession() as session:
         auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
-        client = YoLinkClient(auth_mgr)
+        client = YoLinkHttpClient(auth_mgr)
 
         print("Connecting to YoLink API...")
         await auth_mgr.check_and_refresh_token()
@@ -54,8 +54,7 @@ async def main() -> None:
         # Fetch device list
         print("Fetching device list...")
         response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getDeviceList"}
+            url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}
         )
 
         devices = response.data.get("devices", [])
@@ -89,4 +88,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

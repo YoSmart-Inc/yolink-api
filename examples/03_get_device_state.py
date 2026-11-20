@@ -29,9 +29,9 @@ import aiohttp
 # Add parent directory to path to import yolink module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from yolink.client import YoLinkClient
 from yolink.device import YoLinkDevice, YoLinkDeviceMode
 from yolink.endpoint import Endpoints
+from yolink.http_client import YoLinkHttpClient
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
 
@@ -52,7 +52,7 @@ async def main() -> None:
     # Create an aiohttp session and auth manager
     async with aiohttp.ClientSession() as session:
         auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
-        client = YoLinkClient(auth_mgr)
+        client = YoLinkHttpClient(auth_mgr)
 
         print("Connecting to YoLink API...")
         await auth_mgr.check_and_refresh_token()
@@ -60,8 +60,7 @@ async def main() -> None:
 
         # Fetch device list
         response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getDeviceList"}
+            url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}
         )
         devices = response.data.get("devices", [])
 
@@ -73,7 +72,9 @@ async def main() -> None:
         if not device_id:
             print("Available devices:")
             for i, dev in enumerate(devices, 1):
-                print(f"  {i}. {dev.get('name')} ({dev.get('type')}) - {dev.get('deviceId')}")
+                print(
+                    f"  {i}. {dev.get('name')} ({dev.get('type')}) - {dev.get('deviceId')}"
+                )
             print()
 
             # Use the first device for demonstration
@@ -95,10 +96,10 @@ async def main() -> None:
         device_mode = YoLinkDeviceMode(**device_data)
         device = YoLinkDevice(device_mode, client)
 
-        print(f"Device: {device.device_name}")
-        print(f"  Type: {device.device_type}")
-        print(f"  Model: {device.device_model_name}")
-        print(f"  ID: {device.device_id}")
+        print(f"Device: {device.name}")
+        print(f"  Type: {device.type}")
+        print(f"  Model: {device.model_name}")
+        print(f"  ID: {device.id}")
         print()
 
         # Get device state
@@ -119,4 +120,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

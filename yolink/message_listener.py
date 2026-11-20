@@ -10,5 +10,5 @@ class MessageListener(metaclass=ABCMeta):
     """Home message listener."""
 
     @abstractmethod
-    def on_message(self, device: YoLinkDevice, msg_data: dict[str, Any]) -> None:
+    def on_message(self, device: YoLinkDevice, data: dict[str, Any]) -> None:
         """On device message receive."""

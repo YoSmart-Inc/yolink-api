@@ -2,14 +2,23 @@
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .exception import (
+    YoLinkApiCode,
     YoLinkAuthFailError,
     YoLinkClientError,
-    YoLinkDeviceConnectionFailed,
-    YoLinkUnSupportedMethodError,
 )
+
+
+class DeviceMessage(BaseModel):
+    """A device event received from MQTT."""
+
+    event: str
+    time: int | None = None
+    msgid: str | int | None = None
+    device_id: str | None = Field(default=None, alias="deviceId")
+    data: dict[str, Any]
 
 
 class BRDP(BaseModel):
@@ -21,15 +30,16 @@ class BRDP(BaseModel):
     data: dict[str, Any] = None
     event: str | None = None
 
-    def check_response(self):
+    def check_response(self) -> None:
         """Check API Response."""
-        if self.code != "000000":
-            if self.code == "000103":
+        if self.code != YoLinkApiCode.SUCCESS:
+            if self.code in (
+                YoLinkApiCode.AUTH_FAILED,
+                YoLinkApiCode.INVALID_CLIENT_ID,
+                YoLinkApiCode.INVALID_AUTHORIZATION,
+                YoLinkApiCode.TOKEN_EXPIRED,
+            ):
                 raise YoLinkAuthFailError(self.code, self.desc)
-            if self.code == "000201":
-                raise YoLinkDeviceConnectionFailed(self.code, self.desc)
-            if self.code == "010203":
-                raise YoLinkUnSupportedMethodError(self.code, self.desc)
             raise YoLinkClientError(self.code, self.desc)
 
 

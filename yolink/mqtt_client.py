@@ -10,10 +10,10 @@ from pydantic import ValidationError
 from .auth_mgr import YoLinkAuthMgr
 from .device import YoLinkDevice
 from .endpoint import Endpoint
+from .exception import YoLinkError
 from .local_auth_mgr import YoLinkLocalAuthMgr
 from .message_listener import MessageListener
-from .message_resolver import resolve_sub_message
-from .model import BRDP
+from .model import DeviceMessage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,6 +66,12 @@ class YoLinkMqttClient:
         self._running = True
         while self._running:
             try:
+                _LOGGER.debug(
+                    "[%s] Starting MQTT connection: host=%s port=%s",
+                    self._endpoint.name,
+                    self._broker_host,
+                    self._broker_port,
+                )
                 username, password = await self._check_and_refresh_token()
                 async with Client(
                     hostname=self._broker_host,
@@ -75,14 +81,14 @@ class YoLinkMqttClient:
                     keepalive=60,
                     protocol=ProtocolVersion.V311,
                 ) as client:
-                    _LOGGER.info(
-                        "[%s] connecting to yolink mqtt broker.", self._endpoint.name
-                    )
                     if self._topic is not None:
                         await client.subscribe(self._topic)
-                        _LOGGER.info(
-                            "[%s] yolink mqtt client connected.", self._endpoint.name
-                        )
+                    _LOGGER.info(
+                        "[%s] MQTT connected: host=%s port=%s",
+                        self._endpoint.name,
+                        self._broker_host,
+                        self._broker_port,
+                    )
                     async for message in client.messages:
                         try:
                             self._process_message(message)
@@ -92,20 +98,36 @@ class YoLinkMqttClient:
                                 self._endpoint.name,
                                 message.topic,
                             )
-            except MqttError:
-                _LOGGER.exception(
-                    "[%s] yolink mqtt client disconnected!",
+            except (MqttError, YoLinkError) as err:
+                _LOGGER.warning(
+                    "[%s] MQTT connection failed; reconnecting in %ss: "
+                    "host=%s port=%s error=%s code=%s",
                     self._endpoint.name,
+                    reconnect_interval,
+                    self._broker_host,
+                    self._broker_port,
+                    type(err).__name__,
+                    getattr(err, "code", None),
                 )
                 await asyncio.sleep(reconnect_interval)
             except Exception:
-                _LOGGER.exception("[%s] unexpected exception:", self._endpoint.name)
+                _LOGGER.exception(
+                    "[%s] Unexpected MQTT failure; reconnecting in %ss",
+                    self._endpoint.name,
+                    reconnect_interval,
+                )
                 await asyncio.sleep(reconnect_interval)
 
     async def disconnect(self) -> None:
         """UnRegister listener"""
         if self._listener_task is None:
             return
+        _LOGGER.info(
+            "[%s] Stopping MQTT listener: host=%s port=%s",
+            self._endpoint.name,
+            self._broker_host,
+            self._broker_port,
+        )
         task = self._listener_task
         self._running = False
         task.cancel()
@@ -116,6 +138,12 @@ class YoLinkMqttClient:
         finally:
             if task.done() and self._listener_task is task:
                 self._listener_task = None
+        _LOGGER.info(
+            "[%s] MQTT listener stopped: host=%s port=%s",
+            self._endpoint.name,
+            self._broker_host,
+            self._broker_port,
+        )
 
     def _is_message_acceptable(self, eventType: str | None) -> bool:
         """Check if the message is acceptable."""
@@ -139,41 +167,59 @@ class YoLinkMqttClient:
 
     def _process_message(self, msg) -> None:
         """Mqtt on message."""
-        _LOGGER.debug(
-            "Received message on %s%s: %s",
-            msg.topic,
-            " (retained)" if msg.retain else "",
-            msg.payload[0:8192],
-        )
         keys = str(msg.topic).split("/")
         if len(keys) == 4 and keys[3] == "report":
             try:
                 device_id = keys[2]
-                msg_data = BRDP.parse_raw(msg.payload.decode("UTF-8"))
-                if not self._is_message_acceptable(msg_data.event):
+                message_payload = DeviceMessage.model_validate_json(
+                    msg.payload.decode("UTF-8")
+                )
+                _LOGGER.debug(
+                    "[%s] MQTT message: device=%s event=%s retained=%s",
+                    self._endpoint.name,
+                    device_id,
+                    message_payload.event,
+                    msg.retain,
+                )
+                if not self._is_message_acceptable(message_payload.event):
                     return
-                msg_event = msg_data.event.split(".")
-                msg_type = msg_event[len(msg_event) - 1]
+                msg_event = message_payload.event.split(".")
+                event_type = msg_event[len(msg_event) - 1]
                 device = self._devices.get(device_id)
                 if device is None:
                     return
-                paired_device_id = device.get_paired_device_id()
-                if paired_device_id is not None:
-                    paired_device = self._devices.get(paired_device_id)
-                    if paired_device is None:
-                        return
-                    # post current device state to paired device
-                    paired_device_state = {"state": msg_data.data.get("state")}
-                    self.__resolve_message(paired_device, paired_device_state, msg_type)
-                self.__resolve_message(device, msg_data.data, msg_type)
-            except ValidationError:
-                # ignore invalidate message
-                _LOGGER.debug("Message invalidate.")
+                if isinstance(device, YoLinkDevice):
+                    report_at = message_payload.data.get("reportAt")
+                    device.update_last_report_at(
+                        report_at if report_at is not None else message_payload.time
+                    )
+                self._process_paired_device(device, message_payload.data, event_type)
+                self.__resolve_message(device, message_payload.data, event_type)
+            except (ValidationError, UnicodeDecodeError) as err:
+                _LOGGER.warning(
+                    "[%s] Ignoring invalid MQTT message: topic=%s error=%s",
+                    self._endpoint.name,
+                    msg.topic,
+                    type(err).__name__,
+                )
+
+    def _process_paired_device(
+        self, device: YoLinkDevice, data: dict[str, Any], event_type: str
+    ) -> None:
+        """Forward the state to the paired device, if one is configured."""
+        paired_device_id = device.get_paired_device_id()
+        if paired_device_id is None:
+            return
+        paired_device = self._devices.get(paired_device_id)
+        if paired_device is None:
+            return
+        self.__resolve_message(paired_device, {"state": data.get("state")}, event_type)
 
     def __resolve_message(
-        self, device: YoLinkDevice, msg_data: dict[str, Any], msg_type: str
+        self, device: YoLinkDevice, data: dict[str, Any], event_type: str
     ) -> None:
         """Resolve device message."""
-        resolve_sub_message(device, msg_data, msg_type)
+        if isinstance(device, YoLinkDevice):
+            device.resolve_message(data, event_type)
         if self._message_listener is not None:
-            self._message_listener.on_message(device, msg_data)
+            self._message_listener.on_message(device, data)

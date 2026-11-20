@@ -28,13 +28,11 @@ import aiohttp
 # Add parent directory to path to import yolink module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from yolink.client import YoLinkClient
-from yolink.client_request import ClientRequest
-from yolink.device import YoLinkDevice, YoLinkDeviceMode
+from yolink.device import YoLinkDeviceMode
+from yolink.devices.factory import create_device
 from yolink.endpoint import Endpoints
-from yolink.outlet_request_builder import OutletRequestBuilder
+from yolink.http_client import YoLinkHttpClient
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
-
 
 # Device types that can be controlled as switches
 CONTROLLABLE_TYPES = ["Switch", "Outlet", "MultiOutlet", "Manipulator"]
@@ -57,7 +55,7 @@ async def main() -> None:
     # Create an aiohttp session and auth manager
     async with aiohttp.ClientSession() as session:
         auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
-        client = YoLinkClient(auth_mgr)
+        client = YoLinkHttpClient(auth_mgr)
 
         print("Connecting to YoLink API...")
         await auth_mgr.check_and_refresh_token()
@@ -65,8 +63,7 @@ async def main() -> None:
 
         # Fetch device list
         response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getDeviceList"}
+            url=Endpoints.US.value.url, bsdp={"method": "Home.getDeviceList"}
         )
         devices = response.data.get("devices", [])
 
@@ -84,7 +81,9 @@ async def main() -> None:
         if not device_id:
             print("Available controllable devices:")
             for i, dev in enumerate(controllable_devices, 1):
-                print(f"  {i}. {dev.get('name')} ({dev.get('type')}) - {dev.get('deviceId')}")
+                print(
+                    f"  {i}. {dev.get('name')} ({dev.get('type')}) - {dev.get('deviceId')}"
+                )
             print()
 
             # Use the first controllable device for demonstration
@@ -103,18 +102,20 @@ async def main() -> None:
             sys.exit(1)
 
         if device_data.get("type") not in CONTROLLABLE_TYPES:
-            print(f"Error: Device '{device_data.get('name')}' is not a controllable device.")
+            print(
+                f"Error: Device '{device_data.get('name')}' is not a controllable device."
+            )
             print(f"Type: {device_data.get('type')}")
             print(f"This example works with: {', '.join(CONTROLLABLE_TYPES)}")
             sys.exit(1)
 
         # Create a YoLinkDevice instance
         device_mode = YoLinkDeviceMode(**device_data)
-        device = YoLinkDevice(device_mode, client)
+        device = create_device(device_mode, client)
 
-        print(f"Device: {device.device_name}")
-        print(f"  Type: {device.device_type}")
-        print(f"  Model: {device.device_model_name}")
+        print(f"Device: {device.name}")
+        print(f"  Type: {device.type}")
+        print(f"  Model: {device.model_name}")
         print()
 
         # Get current state
@@ -135,13 +136,10 @@ async def main() -> None:
 
         print(f"Turning switch {state_label}...")
 
-        # Use the OutletRequestBuilder to create the request
         # For MultiOutlet devices, you can specify plug_indx (0-based) to control individual outlets
         # Pass None for plug_indx to control all outlets or for single outlet devices
-        request = OutletRequestBuilder.set_state_request(state=new_state, plug_indx=None)
-
         try:
-            result = await device.call_device(request)
+            result = await device.set_state(state=new_state, plug_indx=None)
 
             if result.code == "000000":
                 print(f"✓ Successfully turned {state_label}!")
@@ -156,10 +154,11 @@ async def main() -> None:
             print(f"✗ Error: {e}")
 
         print()
-        print("Note: For MultiOutlet devices (power strips), you can control individual outlets")
-        print("      by passing the outlet index (0-based) to OutletRequestBuilder.set_state_request()")
+        print(
+            "Note: For MultiOutlet devices (power strips), you can control individual outlets"
+        )
+        print("      by passing the outlet index (0-based) to device.set_state()")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-

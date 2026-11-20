@@ -40,20 +40,17 @@ yolink-api/
 │   └── 05_mqtt_events.py       # Subscribe to real-time events
 ├── yolink/                      # Main package
 │   ├── auth_mgr.py             # Abstract authentication manager
-│   ├── client.py               # HTTP client for API requests
+│   ├── http_client.py               # HTTP client for API requests
 │   ├── client_request.py       # Request model for device commands
 │   ├── const.py                # Constants and device type definitions
 │   ├── device.py               # YoLinkDevice class and models
-│   ├── device_helper.py        # Device utility functions
 │   ├── endpoint.py             # API endpoint definitions (US/EU)
 │   ├── exception.py            # Custom exception classes
-│   ├── home_manager.py         # YoLinkHome manager class
+│   ├── cloud_client.py         # YoLinkCloudClinet manager class
 │   ├── message_listener.py     # Abstract MQTT message listener
-│   ├── message_resolver.py     # Device-specific message parsing
+│   ├── devices/                # Device classes and message parsing
 │   ├── model.py                # BRDP/BSDP data models
 │   ├── mqtt_client.py          # MQTT client for real-time events
-│   ├── outlet_request_builder.py    # Builder for outlet/switch commands
-│   ├── thermostat_request_builder.py # Builder for thermostat commands
 │   ├── uac_auth_mgr.py         # Authentication manager for User Access Credentials
 │   └── unit_helper.py          # Unit conversion utilities
 ├── pyproject.toml              # Project metadata and dependencies
@@ -61,6 +58,19 @@ yolink-api/
 ```
 
 ## Getting Started
+
+Device message conversion is enabled by default. To receive device data without
+unit conversions, flattened fields, or remote button remapping:
+
+```python
+from yolink.config import config
+
+config.enable_message_conversion = False
+```
+
+This setting applies to state queries and MQTT reports. Disabling it skips device
+message parsing, including parser-managed state and online status updates.
+Report timestamps continue to update.
 
 ### 1. Obtain API Credentials
 
@@ -99,7 +109,9 @@ import asyncio
 
 import aiohttp
 
-from yolink.client import YoLinkClient
+from yolink.auth_mgr import YoLinkAuthMgr
+from yolink.http_client import YoLinkHttpClient
+from yolink.const import OAUTH2_TOKEN
 from yolink.endpoint import Endpoints
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
@@ -110,7 +122,7 @@ async def main():
     
     async with aiohttp.ClientSession() as session:
         auth_mgr = YoLinkUACAuthMgr(session, uaid, secret_key)
-        client = YoLinkClient(auth_mgr)
+        client = YoLinkHttpClient(auth_mgr)
         
         # Authenticate
         await auth_mgr.check_and_refresh_token()
@@ -122,7 +134,7 @@ asyncio.run(main())
 ### Enumerate Devices
 
 ```python
-async def list_devices(client: YoLinkClient):
+async def list_devices(client: YoLinkHttpClient):
     response = await client.execute(
         url=Endpoints.US.value.url,
         bsdp={"method": "Home.getDeviceList"}
@@ -137,7 +149,7 @@ async def list_devices(client: YoLinkClient):
 ```python
 from yolink.device import YoLinkDevice, YoLinkDeviceMode
 
-async def get_device_state(client: YoLinkClient, device_data: dict):
+async def get_device_state(client: YoLinkHttpClient, device_data: dict):
     # Create a device instance from the device data
     device_mode = YoLinkDeviceMode(**device_data)
     device = YoLinkDevice(device_mode, client)
@@ -150,13 +162,12 @@ async def get_device_state(client: YoLinkClient, device_data: dict):
 ### Control a Switch
 
 ```python
-from yolink.outlet_request_builder import OutletRequestBuilder
+from yolink.devices import YoLinkSwitch
 
-async def toggle_switch(device: YoLinkDevice, turn_on: bool):
+async def toggle_switch(device: YoLinkSwitch, turn_on: bool):
     # "open" = ON, "close" = OFF
     state = "open" if turn_on else "close"
-    request = OutletRequestBuilder.set_state_request(state=state, plug_indx=None)
-    result = await device.call_device(request)
+    result = await device.set_state(state)
     
     if result.code == "000000":
         print("Success!")
@@ -220,7 +231,7 @@ A ready-made `YoLinkAuthMgr` for User Access Credentials (UAID and Secret Key):
 
 It raises `YoLinkAuthFailError` when the credentials are refused and `YoLinkClientError` for any other failure (network error, timeout, malformed response).
 
-### YoLinkClient
+### YoLinkHttpClient
 
 The HTTP client for making API requests:
 
@@ -236,11 +247,13 @@ Represents a single YoLink device:
 - `fetch_state() -> BRDP`: Fetch cached device state
 - `call_device(request: ClientRequest) -> BRDP`: Send a command to the device
 
-### YoLinkHome
+### YoLinkCloudClinet
+
+Construct with an authentication manager before calling `async_setup`.
 
 High-level manager for your YoLink home (used for Home Assistant integration):
 
-- `async_setup(auth_mgr, listener)`: Initialize the home manager
+- `async_setup(listener)`: Initialize the home manager
 - `async_unload()`: Clean up resources
 - `get_devices() -> list[YoLinkDevice]`: Get all devices
 - `get_device(device_id) -> YoLinkDevice`: Get a specific device
@@ -319,13 +332,30 @@ High-level manager for your YoLink home (used for Home Assistant integration):
 The library defines several exception types:
 
 - `YoLinkError`: Base exception class
-- `YoLinkClientError`: API request errors
-- `YoLinkAuthFailError`: Authentication failures
-- `YoLinkDeviceConnectionFailed`: Device communication errors
-- `YoLinkUnSupportedMethodError`: Unsupported device operations
+- `YoLinkConfigError`: Missing configuration or an uninitialized client
+- `YoLinkConnectionError`: HTTP transport or response status failures
+- `YoLinkTimeoutError`: HTTP timeouts (subclass of `YoLinkConnectionError`)
+- `YoLinkClientError`: API errors, preserving the original `code` and `message`
+- `YoLinkAuthFailError`: API authentication failures
+
+The complete [documented API error codes](https://doc.yosmart.com/docs/protocol/Code/)
+are defined in `YoLinkApiCode`, together with the success code `000000`.
+Credential and token failures raise `YoLinkAuthFailError`; all other API failures
+raise `YoLinkClientError`, preserving the original `code` and `message`.
+Library errors do not have synthetic numeric codes.
+
+API calls through `execute()` retry `YoLinkConnectionError` (including timeouts)
+and API codes `000101`, `000201`, and `000203`, with at most two attempts in total.
+After retries are exhausted, the last exception is raised directly.
+Unsupported methods (`010203`) can be handled by checking `YoLinkClientError.code`.
 
 ```python
-from yolink.exception import YoLinkClientError, YoLinkAuthFailError
+from yolink.exception import (
+    YoLinkAuthFailError,
+    YoLinkClientError,
+    YoLinkConnectionError,
+    YoLinkTimeoutError,
+)
 
 try:
     await device.get_state()
@@ -333,7 +363,32 @@ except YoLinkAuthFailError:
     print("Authentication failed - check your credentials")
 except YoLinkClientError as e:
     print(f"API error {e.code}: {e.message}")
+except YoLinkTimeoutError:
+    print("Request timed out")
+except YoLinkConnectionError:
+    print("HTTP request failed")
 ```
+
+## Logging
+
+The library uses Python's `logging` module without configuring handlers or the
+application's root logger. To enable diagnostics:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("yolink").setLevel(logging.DEBUG)
+```
+
+DEBUG logs include API request start/end, method, target device, HTTP status,
+API code, duration and error type per attempt, and MQTT device/event metadata.
+INFO logs mark unload and MQTT listener shutdown start/completion; completion
+is logged only when shutdown succeeds. Request/response bodies, tokens, and
+authentication headers are not logged. Retries, expected MQTT connection failures,
+and recoverable device loading failures use WARNING without tracebacks. Unexpected
+MQTT processing failures use ERROR with tracebacks. Final API exceptions are
+propagated to the caller for handling.
 
 ## Dependencies
 

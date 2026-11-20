@@ -4,9 +4,9 @@ from typing import Final
 
 MANUFACTURER = "YoLink"
 
-CLASS_AD_KEEPALIVE_TIME = 9 * 60 * 60  # 9 hours in seconds
-CLASS_C_KEEPALIVE_TIME = 70 * 60  # 70 minutes in seconds
-HUB_KEEPALIVE_TIME = 10 * 60  # 10 minutes in seconds
+KEEPALIVE_TIME = 9 * 60 * 60  # 9 hours in seconds
+CLASS_C_KEEPALIVE_TIME = 60 * 60  # 1 hour in seconds
+HUB_KEEPALIVE_TIME = 60 * 60  # 1 hour in seconds
 
 
 ATTR_FIELD_LORA = "loraInfo"
@@ -32,6 +32,7 @@ ATTR_DEVICE_MODEL_HUB = "Hub"
 
 ATTR_DEVICE_DOOR_SENSOR = "DoorSensor"
 ATTR_DEVICE_TH_SENSOR = "THSensor"
+ATTR_DEVICE_TH_SENSOR_V2 = "THSensorV2"
 ATTR_DEVICE_MOTION_SENSOR = "MotionSensor"
 ATTR_DEVICE_MULTI_OUTLET = "MultiOutlet"
 ATTR_DEVICE_LEAK_SENSOR = "LeakSensor"
@@ -62,16 +63,8 @@ ATTR_DEVICE_SMOKE_ALARM = "SmokeAlarm"
 ATTR_DEVICE_MULTI_FUNCTIONAL_SENSOR = "MultifunctionalSensor"
 
 
-# device models
-ATTR_DEVICE_MODEL_MULTIOUTLET_YS6801 = "YS6801"
-
 # water meter controller
 ATTR_DEVICE_MODEL_WATER_METER_YS5018 = "YS5018"
 
 
 UNIT_NOT_RECOGNIZED_TEMPLATE: Final = "{} is not a recognized {} unit."
-
-
-DEVICE_LEAK_STOP_MODELS = ["YS5009-UC", "YS5009-EC", "YS5029-UC", "YS5029-EC"]
-
-DEVICE_MODELS_SUPPORT_MODE_SWITCHING = DEVICE_LEAK_STOP_MODELS

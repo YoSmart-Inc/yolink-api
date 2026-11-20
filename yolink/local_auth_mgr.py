@@ -2,13 +2,19 @@
 
 import logging
 import time
-from asyncio import Lock, TimeoutError
-from json import JSONDecodeError
+from asyncio import Lock
+from http import HTTPStatus
 from typing import cast
 
-from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientResponseError, ClientSession, ClientTimeout
 
 from .auth_mgr import YoLinkAuthMgr
+from .exception import (
+    YoLinkApiCode,
+    YoLinkAuthFailError,
+    YoLinkConnectionError,
+    YoLinkTimeoutError,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +63,19 @@ class YoLinkLocalAuthMgr(YoLinkAuthMgr):
                 self._token = new_token
                 return self.access_token()
             except TimeoutError as err:
-                raise ClientError("Token request timed out") from err
+                raise YoLinkTimeoutError("Token request timed out") from err
+            except ClientResponseError as err:
+                if err.status in (
+                    HTTPStatus.BAD_REQUEST,
+                    HTTPStatus.UNAUTHORIZED,
+                    HTTPStatus.FORBIDDEN,
+                ):
+                    raise YoLinkAuthFailError(
+                        YoLinkApiCode.AUTH_FAILED, "Local Hub authentication failed"
+                    ) from err
+                raise YoLinkConnectionError("Token request failed") from err
+            except ClientError as err:
+                raise YoLinkConnectionError("Token request failed") from err
 
     async def _token_request(self) -> dict:
         """Make a token request."""
@@ -73,16 +91,9 @@ class YoLinkLocalAuthMgr(YoLinkAuthMgr):
             timeout=ClientTimeout(total=10),
         )
         if resp.status >= 400:
-            try:
-                error_response = await resp.json()
-            except (ClientError, JSONDecodeError):
-                error_response = {}
-            error_code = error_response.get("error", "unknown")
-            error_description = error_response.get("error_description", "unknown error")
-            _LOGGER.error(
-                "Token request failed (%s): %s",
-                error_code,
-                error_description,
+            _LOGGER.debug(
+                "Local Hub token request failed: status=%s",
+                resp.status,
             )
         resp.raise_for_status()
         return cast(dict, await resp.json())
