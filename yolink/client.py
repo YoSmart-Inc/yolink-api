@@ -3,6 +3,7 @@
 from typing import Any, Dict
 
 from aiohttp import ClientError, ClientResponse
+from pydantic import ValidationError
 from tenacity import retry, stop_after_attempt, retry_if_exception_type
 
 from .auth_mgr import YoLinkAuthMgr
@@ -84,6 +85,10 @@ class YoLinkClient:
             raise YoLinkClientError(
                 "-1003", "yolink client request failed!"
             ) from client_err
+        except ValidationError as validation_err:
+            raise YoLinkClientError(
+                "invalid_response", "yolink response is invalid!"
+            ) from validation_err
         except YoLinkClientError as yl_client_err:
             raise yl_client_err
         return brdp

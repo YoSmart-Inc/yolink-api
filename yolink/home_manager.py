@@ -1,8 +1,10 @@
 """YoLink home manager."""
 
 from __future__ import annotations
+from dataclasses import dataclass
 import logging
 from typing import Any
+from tenacity import RetryError
 from .auth_mgr import YoLinkAuthMgr
 from .client import YoLinkClient
 from .const import ATTR_DEVICE_WATER_DEPTH_SENSOR
@@ -16,6 +18,42 @@ from .endpoint import Endpoint, Endpoints
 _LOGGER = logging.getLogger(__name__)
 
 has_external_data_devices = [ATTR_DEVICE_WATER_DEPTH_SENSOR]
+
+
+@dataclass(frozen=True)
+class YoLinkHomeInfo:
+    """YoLink home information.
+
+    The name is not documented by the API, but is returned in practice.
+    """
+
+    id: str
+    name: str | None = None
+
+
+async def async_get_home_info(auth_mgr: YoLinkAuthMgr) -> YoLinkHomeInfo:
+    """Get the home information, without loading devices or connecting to MQTT."""
+    try:
+        response: BRDP = await YoLinkClient(auth_mgr).execute(
+            url=Endpoints.US.value.url,  # type: ignore
+            bsdp={"method": "Home.getGeneralInfo"},
+        )
+    except RetryError as err:
+        raise err.last_attempt.result()
+    data = response.data
+    if not isinstance(data, dict):
+        raise YoLinkClientError(
+            "invalid_response", "Home information response is not an object"
+        )
+    home_id = data.get("id")
+    if not isinstance(home_id, str) or not home_id:
+        raise YoLinkClientError(
+            "invalid_response", "Home information response has no usable id"
+        )
+    name = data.get("name")
+    return YoLinkHomeInfo(
+        id=home_id, name=name if isinstance(name, str) and name else None
+    )
 
 
 class YoLinkHome:
