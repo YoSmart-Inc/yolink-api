@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from yolink.client import YoLinkClient
 from yolink.endpoint import Endpoints
+from yolink.home_manager import async_get_home_info
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
 
@@ -81,12 +82,9 @@ async def main() -> None:
 
         # Step 1: Get home ID (required for MQTT topic subscription)
         print("Retrieving home information...")
-        home_response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getGeneralInfo"}
-        )
-        home_id = home_response.data.get("id")
-        home_name = home_response.data.get("name", "Unknown")
+        home = await async_get_home_info(auth_mgr)
+        home_id = home.id
+        home_name = home.name or "Unknown"
         print(f"✓ Home: {home_name}")
         print(f"  Home ID: {home_id}\n")
 

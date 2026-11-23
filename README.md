@@ -39,7 +39,7 @@ yolink-api/
 │   ├── 04_control_switch.py    # Control switches/outlets
 │   └── 05_mqtt_events.py       # Subscribe to real-time events
 ├── yolink/                      # Main package
-│   ├── auth_mgr.py             # Abstract authentication manager
+│   ├── auth_mgr.py             # Abstract authentication manager and access token manager
 │   ├── client.py               # HTTP client for API requests
 │   ├── client_request.py       # Request model for device commands
 │   ├── const.py                # Constants and device type definitions
@@ -117,6 +117,17 @@ async def main():
         print("Connected!")
 
 asyncio.run(main())
+```
+
+### Get Home Information
+
+```python
+from yolink.auth_mgr import YoLinkAuthMgr
+from yolink.home_manager import async_get_home_info
+
+async def show_home(auth_mgr: YoLinkAuthMgr):
+    home = await async_get_home_info(auth_mgr)
+    print(f"{home.name or 'Unknown'} ({home.id})")
 ```
 
 ### Enumerate Devices
@@ -220,11 +231,18 @@ A ready-made `YoLinkAuthMgr` for User Access Credentials (UAID and Secret Key):
 
 It raises `YoLinkAuthFailError` when the credentials are refused and `YoLinkClientError` for any other failure (network error, timeout, malformed response).
 
+### YoLinkAccessTokenAuthMgr
+
+A `YoLinkAuthMgr` (in `yolink.auth_mgr`) for callers that already hold a valid access token, for example right after an OAuth exchange:
+
+- `YoLinkAccessTokenAuthMgr(session, access_token)`: Create the manager with an `aiohttp.ClientSession` and the token
+- `access_token() -> str` and `check_and_refresh_token() -> str`: Both return the token, which cannot be refreshed
+
 ### YoLinkClient
 
 The HTTP client for making API requests:
 
-- `execute(url, bsdp, **kwargs) -> BRDP`: Execute an API request
+- `execute(url, bsdp, **kwargs) -> BRDP`: Execute an API request. A response body that fails validation raises `YoLinkClientError` with the code `invalid_response`
 - `get(url, **kwargs) -> ClientResponse`: Make a GET request
 - `post(url, **kwargs) -> ClientResponse`: Make a POST request
 
@@ -235,6 +253,10 @@ Represents a single YoLink device:
 - `get_state() -> BRDP`: Get real-time device state
 - `fetch_state() -> BRDP`: Fetch cached device state
 - `call_device(request: ClientRequest) -> BRDP`: Send a command to the device
+
+### async_get_home_info
+
+`async_get_home_info(auth_mgr) -> YoLinkHomeInfo` (in `yolink.home_manager`) makes the `Home.getGeneralInfo` call, without loading devices or connecting to MQTT. `YoLinkHomeInfo` is a frozen dataclass with `id: str` and `name: str | None` (the name is not documented by the API, but is returned in practice). It raises `YoLinkAuthFailError` when the API refuses the token (code `000103`), `asyncio.TimeoutError` when the request exceeds its total timeout, and `YoLinkClientError` otherwise, for example `-1003` for HTTP and connection errors (including connection and socket timeouts), or `invalid_response` when the response is unusable (it fails validation or has no usable home id).
 
 ### YoLinkHome
 

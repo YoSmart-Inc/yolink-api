@@ -25,8 +25,7 @@ import aiohttp
 # Add parent directory to path to import yolink module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from yolink.client import YoLinkClient
-from yolink.endpoint import Endpoints
+from yolink.home_manager import async_get_home_info
 from yolink.uac_auth_mgr import YoLinkUACAuthMgr
 
 
@@ -52,18 +51,12 @@ async def main() -> None:
         await auth_mgr.check_and_refresh_token()
         print(f"✓ Successfully authenticated!")
 
-        # Create a client and make a test request
-        client = YoLinkClient(auth_mgr)
-
         # Fetch home info to verify connection
         print("\nFetching home information...")
-        response = await client.execute(
-            url=Endpoints.US.value.url,
-            bsdp={"method": "Home.getGeneralInfo"}
-        )
+        home = await async_get_home_info(auth_mgr)
 
-        print(f"✓ Connected to home: {response.data.get('name', 'Unknown')}")
-        print(f"  Home ID: {response.data.get('id')}")
+        print(f"✓ Connected to home: {home.name or 'Unknown'}")
+        print(f"  Home ID: {home.id}")
 
 
 if __name__ == "__main__":
